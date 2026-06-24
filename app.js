@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { sendOTP, verifyOTP, otpRequestLimiter, logout } from './routes/auth.js';
 import { authenticateToken } from './middleware/authenticate.js';
 import { sendSuccess, sendError } from './utils/response.js';
@@ -13,6 +14,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 }
 
 const app = express();
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 
 // health API
