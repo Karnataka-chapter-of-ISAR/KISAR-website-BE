@@ -19,13 +19,25 @@ export const MESSAGES = {
   },
 
   TOKEN: {
-    MISSING:          'You are not logged in. Please log in to continue.',
+    MISSING:           'You are not logged in. Please log in to continue.',
     INVALID_OR_EXPIRED:'Your session has expired. Please log in again.',
-    REVOKED:          'You have been signed out from another session. Please log in again.',
+    REVOKED:           'You have been signed out from another session. Please log in again.',
+    REFRESHED:         'Access token refreshed successfully.',
   },
 
   USER: {
     FETCH_SUCCESS: 'User details fetched successfully.',
+  },
+
+  MEMBERS: {
+    IMPORT_SUCCESS:          'Members imported successfully.',
+    NO_FILE:                 'No file was uploaded. Please attach an Excel file.',
+    INVALID_FILE_TYPE:       'Invalid file type. Please upload a valid .xlsx or .xls file.',
+    PARSE_ERROR:             'Failed to read the uploaded file. Ensure it is a valid Excel sheet.',
+    EMPTY_SHEET:             'The uploaded sheet contains no data rows.',
+    MISSING_REQUIRED_FIELDS: 'Some rows are missing required fields (name, email). No records were saved.',
+    DUPLICATE_IN_SHEET:      'The sheet contains duplicate email addresses. No records were saved.',
+    DUPLICATE_EMAILS:        'Some emails already exist in the database. No records were saved.',
   },
 
 };

@@ -4,7 +4,7 @@ import { sendError } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
 
 export async function authenticateToken(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
+  const token = req.cookies.auth_token;
   if (!token) return sendError(res, { message: MESSAGES.TOKEN.MISSING, statusCode: 401 });
 
   try {
