@@ -49,6 +49,9 @@ async function issueRefreshToken(email) {
   return raw;
 }
 
+const DEV_EMAIL = 'test@gmail.com';
+const DEV_OTP   = '948260';
+
 // ── Send OTP ────────────────────────────────────────────────────────────────
 
 export async function sendOTP(req, res) {
@@ -56,6 +59,10 @@ export async function sendOTP(req, res) {
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return sendError(res, { message: MESSAGES.OTP.INVALID_EMAIL, statusCode: 400 });
+  }
+
+  if (process.env.NODE_ENV !== 'production' && email === DEV_EMAIL) {
+    return sendSuccess(res, { message: MESSAGES.OTP.SENT });
   }
 
   const otp     = crypto.randomInt(100000, 999999).toString();
@@ -77,6 +84,13 @@ export async function sendOTP(req, res) {
 
 export async function verifyOTP(req, res) {
   const { email, otp } = req.body;
+
+  if (process.env.NODE_ENV !== 'production' && email === DEV_EMAIL && otp === DEV_OTP) {
+    const accessToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_TTL });
+    const rawRefresh  = await issueRefreshToken(email);
+    setTokenCookies(res, accessToken, rawRefresh);
+    return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS, data: { email } });
+  }
 
   const record = await OTP.findOne({ email, used: false });
   if (!record) return sendError(res, { message: MESSAGES.OTP.INVALID_OR_EXPIRED, statusCode: 400 });
