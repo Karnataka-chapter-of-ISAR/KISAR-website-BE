@@ -1,21 +1,7 @@
-import multer from 'multer';
 import * as XLSX from 'xlsx';
-import Member from '../models/Member.js';
-import { sendSuccess, sendError } from '../utils/response.js';
+import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB cap
-  fileFilter(_, file, cb) {
-    const allowed = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-    ];
-    if (allowed.includes(file.mimetype)) return cb(null, true);
-    cb(new Error(MESSAGES.MEMBERS.INVALID_FILE_TYPE));
-  },
-});
+import * as memberRepository from '../repositories/member.repository.js';
 
 // Maps normalised Excel header → schema field name
 const HEADER_MAP = {
@@ -50,23 +36,16 @@ function parseSheet(buffer) {
   });
 }
 
-export const uploadMiddleware = upload.single('file');
-
-export async function importMembers(req, res) {
-  if (!req.file) {
-    return sendError(res, { message: MESSAGES.MEMBERS.NO_FILE, statusCode: 400 });
-  }
-
-  // ── Parse ──────────────────────────────────────────────────────────────────
+export async function importMembersFromSheet(buffer) {
   let rows;
   try {
-    rows = parseSheet(req.file.buffer);
+    rows = parseSheet(buffer);
   } catch {
-    return sendError(res, { message: MESSAGES.MEMBERS.PARSE_ERROR, statusCode: 422 });
+    throw new AppError(MESSAGES.MEMBERS.PARSE_ERROR, 422);
   }
 
   if (rows.length === 0) {
-    return sendError(res, { message: MESSAGES.MEMBERS.EMPTY_SHEET, statusCode: 422 });
+    throw new AppError(MESSAGES.MEMBERS.EMPTY_SHEET, 422);
   }
 
   // ── Validate required fields & collect emails ───────────────────────────────
@@ -82,11 +61,7 @@ export async function importMembers(req, res) {
   });
 
   if (invalidRows.length > 0) {
-    return sendError(res, {
-      message: MESSAGES.MEMBERS.MISSING_REQUIRED_FIELDS,
-      statusCode: 422,
-      data: { rows: invalidRows },
-    });
+    throw new AppError(MESSAGES.MEMBERS.MISSING_REQUIRED_FIELDS, 422, { rows: invalidRows });
   }
 
   // ── Detect duplicates within the sheet itself ───────────────────────────────
@@ -97,33 +72,16 @@ export async function importMembers(req, res) {
     else seen.add(email);
   }
   if (intraSheetDupes.length > 0) {
-    return sendError(res, {
-      message: MESSAGES.MEMBERS.DUPLICATE_IN_SHEET,
-      statusCode: 409,
-      data: { duplicateEmails: [...new Set(intraSheetDupes)] },
-    });
+    throw new AppError(MESSAGES.MEMBERS.DUPLICATE_IN_SHEET, 409, { duplicateEmails: [...new Set(intraSheetDupes)] });
   }
 
   // ── Check against existing DB records ──────────────────────────────────────
-  const existing = await Member.find(
-    { email: { $in: sheetEmails } },
-    { email: 1, _id: 0 },
-  ).lean();
-
+  const existing = await memberRepository.findMemberEmails(sheetEmails);
   if (existing.length > 0) {
-    return sendError(res, {
-      message: MESSAGES.MEMBERS.DUPLICATE_EMAILS,
-      statusCode: 409,
-      data: { duplicateEmails: existing.map(m => m.email) },
-    });
+    throw new AppError(MESSAGES.MEMBERS.DUPLICATE_EMAILS, 409, { duplicateEmails: existing.map(m => m.email) });
   }
 
   // ── All clear — insert ──────────────────────────────────────────────────────
-  await Member.insertMany(rows);
-
-  return sendSuccess(res, {
-    message: MESSAGES.MEMBERS.IMPORT_SUCCESS,
-    statusCode: 201,
-    data: { imported: rows.length },
-  });
+  await memberRepository.insertMembers(rows);
+  return rows.length;
 }

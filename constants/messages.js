@@ -40,4 +40,15 @@ export const MESSAGES = {
     DUPLICATE_EMAILS:        'Some emails already exist in the database. No records were saved.',
   },
 
+  EVENTS: {
+    CREATE_SUCCESS:  'Event created successfully.',
+    FETCH_SUCCESS:   'Events fetched successfully.',
+    VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
+  },
+
+  ADMIN: {
+    TOKEN_MISSING: 'Admin access token is missing. Please log in again.',
+    UNAUTHORIZED:  'You are not authorized to access admin resources.',
+  },
+
 };
