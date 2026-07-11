@@ -2,10 +2,11 @@ export const ACCESS_TOKEN_COOKIE_MAX_AGE_MS  = 15 * 60 * 1000;
 export const REFRESH_TOKEN_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function cookieOpts(maxAge) {
+  const isProd = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     maxAge,
   };
 }
