@@ -5,6 +5,11 @@ export const MESSAGES = {
     INTERNAL_ERROR: 'Something went wrong on our end. Please try again later.',
   },
 
+  UPLOAD: {
+    FILE_TOO_LARGE: 'The uploaded file exceeds the 5MB size limit.',
+    UPLOAD_ERROR:   'The file could not be uploaded. Please try again.',
+  },
+
   OTP: {
     SENT:              'A 6-digit verification code has been sent to your email. Please check your inbox.',
     INVALID_EMAIL:     'Please enter a valid email address.',

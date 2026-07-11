@@ -4,13 +4,14 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import multer from 'multer';
 import authRoutes from './routes/auth.routes.js';
 import membersRoutes from './routes/members.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import adminEventsRoutes from './routes/admin/events.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { authenticateToken } from './middleware/authenticate.js';
-import { sendSuccess } from './utils/response.js';
+import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
 
@@ -22,7 +23,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 app.set('trust proxy', 1);
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app').split(',');
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
@@ -48,6 +49,20 @@ app.get('/me', authenticateToken, (req, res) => {
 app.use('/members', membersRoutes);
 app.use('/events', eventsRoutes);
 app.use('/admin/events', adminEventsRoutes);
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    const message = err.code === 'LIMIT_FILE_SIZE' ? MESSAGES.UPLOAD.FILE_TOO_LARGE : MESSAGES.UPLOAD.UPLOAD_ERROR;
+    return sendError(res, { message, statusCode: 400 });
+  }
+
+  if (err?.message?.startsWith('Invalid file type')) {
+    return sendError(res, { message: err.message, statusCode: 400 });
+  }
+
+  logger.error(`Unhandled error: ${err.stack || err.message}`);
+  return sendError(res, { message: MESSAGES.GENERAL.INTERNAL_ERROR, statusCode: 500 });
+});
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => logger.info('MongoDB connected'))
