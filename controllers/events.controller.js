@@ -51,6 +51,18 @@ export async function updateEventController(req, res) {
   }
 }
 
+export async function deleteEventController(req, res) {
+  try {
+    await deleteEvent(req.params.id);
+    return sendSuccess(res, { message: MESSAGES.EVENTS.DELETE_SUCCESS });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
+}
+
 export async function getMyEventsController(req, res) {
   const events = await listEventsForMember(req.user.email);
 
