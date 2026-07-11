@@ -11,8 +11,15 @@ export async function sendOtpController(req, res) {
   const { valid, data } = validateSendOtpRequest(req.body);
   if (!valid) return sendError(res, { message: MESSAGES.OTP.INVALID_EMAIL, statusCode: 400 });
 
-  await requestOtp(data.email);
-  return sendSuccess(res, { message: MESSAGES.OTP.SENT });
+  try {
+    await requestOtp(data.email);
+    return sendSuccess(res, { message: MESSAGES.OTP.SENT });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
 }
 
 export async function verifyOtpController(req, res) {

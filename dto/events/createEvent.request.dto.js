@@ -1,10 +1,12 @@
 import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
 
+const LINK_LABEL_MAX_LENGTH = 50;
+
 // Validates and normalises a raw request body into the shape the Event service expects.
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateCreateEventRequest(body = {}) {
   const errors = [];
-  const { title, type, capacity, date, time, location, meetingLink } = body;
+  const { title, type, capacity, date, time, location, link, linkLabel } = body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     errors.push('Event title is required.');
@@ -32,12 +34,16 @@ export function validateCreateEventRequest(body = {}) {
     errors.push('Location is required.');
   }
 
-  if (meetingLink) {
+  if (link) {
     try {
-      new URL(meetingLink);
+      new URL(link);
     } catch {
-      errors.push('Meeting link must be a valid URL.');
+      errors.push('Link must be a valid URL.');
     }
+  }
+
+  if (linkLabel && (typeof linkLabel !== 'string' || linkLabel.trim().length > LINK_LABEL_MAX_LENGTH)) {
+    errors.push(`Link label must be ${LINK_LABEL_MAX_LENGTH} characters or fewer.`);
   }
 
   if (errors.length > 0) return { valid: false, errors };
@@ -51,7 +57,8 @@ export function validateCreateEventRequest(body = {}) {
       date: parsedDate,
       time,
       location: location.trim(),
-      meetingLink: meetingLink ? meetingLink.trim() : null,
+      link: link ? link.trim() : null,
+      linkLabel: linkLabel ? linkLabel.trim() : undefined,
     },
   };
 }

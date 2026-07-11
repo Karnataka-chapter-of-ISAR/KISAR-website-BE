@@ -8,6 +8,7 @@ import { MESSAGES } from '../constants/messages.js';
 import * as otpRepository from '../repositories/otp.repository.js';
 import * as refreshTokenRepository from '../repositories/refreshToken.repository.js';
 import * as blacklistedTokenRepository from '../repositories/blacklistedToken.repository.js';
+import * as memberRepository from '../repositories/member.repository.js';
 
 const ACCESS_TOKEN_JWT_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -31,6 +32,9 @@ async function issueTokenPair(email) {
 
 export async function requestOtp(email) {
   if (process.env.NODE_ENV !== 'production' && email === DEV_EMAIL) return;
+
+  const member = await memberRepository.findMemberByEmail(email.toLowerCase());
+  if (!member) throw new AppError(MESSAGES.OTP.NOT_A_MEMBER, 403);
 
   const otp     = crypto.randomInt(100000, 999999).toString();
   const otpHash = await bcrypt.hash(otp, 10);

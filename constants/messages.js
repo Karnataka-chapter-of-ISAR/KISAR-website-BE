@@ -11,6 +11,7 @@ export const MESSAGES = {
     INVALID_OR_EXPIRED:'The code you entered is invalid or has expired. Please request a new one.',
     TOO_MANY_ATTEMPTS: 'Too many incorrect attempts. Your code has been invalidated. Please request a new one.',
     RATE_LIMITED:      'You have requested too many codes. Please wait 15 minutes before trying again.',
+    NOT_A_MEMBER:      'This email is not registered as a member. Please contact your administrator.',
   },
 
   AUTH: {
@@ -41,9 +42,16 @@ export const MESSAGES = {
   },
 
   EVENTS: {
-    CREATE_SUCCESS:  'Event created successfully.',
-    FETCH_SUCCESS:   'Events fetched successfully.',
-    VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
+    CREATE_SUCCESS:     'Event created successfully.',
+    UPDATE_SUCCESS:     'Event updated successfully.',
+    DELETE_SUCCESS:     'Event deleted successfully.',
+    FETCH_SUCCESS:      'Events fetched successfully.',
+    VALIDATION_ERROR:   'Please fix the highlighted fields and try again.',
+    REGISTER_SUCCESS:   'You have been registered for this event.',
+    NOT_A_MEMBER:       'This email is not registered as a member. Please contact your administrator.',
+    NOT_FOUND:          'Event not found.',
+    ALREADY_REGISTERED: 'You are already registered for this event.',
+    EVENT_FULL:         'This event has reached its capacity.',
   },
 
   ADMIN: {

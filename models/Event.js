@@ -9,9 +9,11 @@ const eventSchema = new mongoose.Schema(
     date:        { type: Date, required: true },
     time:        { type: String, required: true, match: TIME_FORMAT_REGEX },
     location:    { type: String, required: true, trim: true },
-    meetingLink: { type: String, trim: true, default: null },
+    link:        { type: String, trim: true, default: null },
+    linkLabel:   { type: String, trim: true, default: 'Meeting Link' },
     bannerImage: { type: String, trim: true, default: null },
     createdBy:   { type: String, trim: true, default: null },
+    registeredMembers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
   },
   { timestamps: true },
 );
