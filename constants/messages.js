@@ -36,14 +36,15 @@ export const MESSAGES = {
   },
 
   MEMBERS: {
-    IMPORT_SUCCESS:          'Members imported successfully.',
-    NO_FILE:                 'No file was uploaded. Please attach an Excel file.',
-    INVALID_FILE_TYPE:       'Invalid file type. Please upload a valid .xlsx or .xls file.',
-    PARSE_ERROR:             'Failed to read the uploaded file. Ensure it is a valid Excel sheet.',
-    EMPTY_SHEET:             'The uploaded sheet contains no data rows.',
-    MISSING_REQUIRED_FIELDS: 'Some rows are missing required fields (name, email). No records were saved.',
-    DUPLICATE_IN_SHEET:      'The sheet contains duplicate email addresses. No records were saved.',
-    DUPLICATE_EMAILS:        'Some emails already exist in the database. No records were saved.',
+    IMPORT_SUCCESS:              'Members imported successfully.',
+    NO_FILE:                     'No file was uploaded. Please attach an Excel file.',
+    INVALID_FILE_TYPE:           'Invalid file type. Please upload a valid .xlsx or .xls file.',
+    PARSE_ERROR:                 'Failed to read the uploaded file. Ensure it is a valid Excel sheet.',
+    EMPTY_SHEET:                 'The uploaded sheet contains no data rows.',
+    VALIDATION_REJECTED:         'Upload rejected — conflicts found. Fix the rows below and re-upload.',
+    VALIDATION_PASSED:           'Validation passed — ready to onboard.',
+    BATCH_NOT_FOUND_OR_EXPIRED:  'This validated batch was not found or has expired. Please re-upload and validate again.',
+    BATCH_CONFLICT_ON_CONFIRM:   'Some emails were added to the system after validation. Please re-upload and validate again.',
   },
 
   EVENTS: {

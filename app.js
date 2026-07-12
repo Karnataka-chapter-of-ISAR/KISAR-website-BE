@@ -6,9 +6,9 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import authRoutes from './routes/auth.routes.js';
-import membersRoutes from './routes/members.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import adminEventsRoutes from './routes/admin/events.routes.js';
+import adminMembersRoutes from './routes/admin/members.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { authenticateToken } from './middleware/authenticate.js';
 import { sendSuccess, sendError } from './utils/response.js';
@@ -46,9 +46,9 @@ app.get('/me', authenticateToken, (req, res) => {
   sendSuccess(res, { message: MESSAGES.USER.FETCH_SUCCESS, data: { email: req.user.email } });
 });
 
-app.use('/members', membersRoutes);
 app.use('/events', eventsRoutes);
 app.use('/admin/events', adminEventsRoutes);
+app.use('/admin/members', adminMembersRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
