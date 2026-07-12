@@ -1,7 +1,10 @@
 import Member from '../models/Member.js';
 
-export function findMemberEmails(emails) {
-  return Member.find({ email: { $in: emails } }, { email: 1, _id: 0 }).lean();
+export function findConflictingMembers({ emails, membershipNos }) {
+  return Member.find(
+    { $or: [{ email: { $in: emails } }, { membershipNo: { $in: membershipNos } }] },
+    { email: 1, membershipNo: 1, _id: 0 },
+  ).lean();
 }
 
 export function findMemberByEmail(email) {

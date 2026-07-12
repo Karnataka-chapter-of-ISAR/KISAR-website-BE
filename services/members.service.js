@@ -11,23 +11,49 @@ const BATCH_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^(?:\+91)?[6-9]\d{9}$/;
 
-// Maps normalised Excel header → schema field name
+const REQUIRED_FIELDS = ['name', 'email', 'membershipNo'];
+
+// Maps normalised Excel header → schema field name. Covers both the plain
+// import template and the ISAR membership-registry export format.
 const HEADER_MAP = {
-  name:           'name',
-  email:          'email',
-  designation:    'designation',
-  specialization: 'specialization',
-  institution:    'institution',
-  city:           'city',
-  district:       'district',
-  phone:          'phone',
-  linkedin:       'linkedin',
-  joined:         'joined',
-  privacy:        'privacy',
-  lat:            'lat',
-  lng:            'lng',
-  colorindex:     'colorIndex',
+  // plain template
+  name:              'name',
+  email:             'email',
+  designation:       'designation',
+  specialization:    'specialization',
+  institution:       'institution',
+  city:              'city',
+  district:          'district',
+  phone:             'phone',
+  linkedin:          'linkedin',
+  joined:            'joined',
+  privacy:           'privacy',
+  lat:               'lat',
+  lng:               'lng',
+  colorindex:        'colorIndex',
+
+  // ISAR membership-registry export
+  'new membership no':      'membershipNo',
+  doctor:                    'title',
+  'category of membership': 'membershipCategory',
+  'full name':               'name',
+  state:                     'state',
+  pin:                       'pincode',
+  'state chapter selected':  'chapter',
+  country:                   'country',
+  zone:                      'zone',
+  mobile1:                   'phone',
+  mobile2:                   'alternatePhone',
+  'email 1':                 'email',
+  'email 2':                 'alternateEmail',
 };
+
+const ADDRESS_HEADERS = new Set(['address 1', 'address 2', 'address 3']);
+const STRINGIFY_FIELDS = ['phone', 'alternatePhone', 'pincode', 'membershipNo'];
+
+function normalizeHeader(key) {
+  return key.replace(/\s+/g, ' ').trim().toLowerCase();
+}
 
 function parseSheet(buffer) {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -36,10 +62,28 @@ function parseSheet(buffer) {
 
   return rows.map(raw => {
     const member = {};
+    const addressParts = [];
+
     for (const [rawKey, value] of Object.entries(raw)) {
-      const mapped = HEADER_MAP[rawKey.trim().toLowerCase()];
-      if (mapped) member[mapped] = value === '' ? null : value;
+      const key = normalizeHeader(rawKey);
+      const cleaned = value === '' ? null : value;
+
+      if (ADDRESS_HEADERS.has(key)) {
+        if (cleaned) addressParts.push(cleaned.toString().trim());
+        continue;
+      }
+
+      const mapped = HEADER_MAP[key];
+      if (mapped) member[mapped] = cleaned;
     }
+
+    if (addressParts.length > 0) member.address = addressParts.join(', ');
+
+    // Excel yields numbers for phone-like/pin/membership-no columns; normalise to strings.
+    for (const field of STRINGIFY_FIELDS) {
+      if (member[field] != null) member[field] = member[field].toString().trim();
+    }
+
     return member;
   });
 }
@@ -48,7 +92,7 @@ function parseSheet(buffer) {
 // order. Returns { row, name, email, issue, type } for the first problem
 // found, or null if the row is clean so far.
 function checkRowFormat(row, rowNumber) {
-  const missing = ['name', 'email'].filter(field => !row[field]);
+  const missing = REQUIRED_FIELDS.filter(field => !row[field]);
   if (missing.length > 0) {
     return { row: rowNumber, name: row.name ?? null, email: row.email ?? null, issue: `Missing required field(s): ${missing.join(', ')}`, type: 'Conflict' };
   }
@@ -77,7 +121,6 @@ export async function validateMembersSheet(buffer, adminId) {
     throw new AppError(MESSAGES.MEMBERS.EMPTY_SHEET, 422);
   }
 
-  const errorRows = [];
   const rowNumbers = rows.map((_, idx) => idx + 2); // +2 = 1-based + header row
 
   // ── Format / required-field checks ──────────────────────────────────────────
@@ -87,13 +130,19 @@ export async function validateMembersSheet(buffer, adminId) {
     if (issue) formatIssueByIndex.set(idx, issue);
   });
 
-  // ── Intra-sheet duplicate emails (only among rows that passed format checks) ─
+  // ── Intra-sheet duplicates (email checked first, then membership number) ────
   const emailToIndices = new Map();
+  const membershipNoToIndices = new Map();
   rows.forEach((row, idx) => {
     if (formatIssueByIndex.has(idx)) return;
+
     const email = row.email.toString().toLowerCase().trim();
     if (!emailToIndices.has(email)) emailToIndices.set(email, []);
     emailToIndices.get(email).push(idx);
+
+    const membershipNo = row.membershipNo.toString().trim();
+    if (!membershipNoToIndices.has(membershipNo)) membershipNoToIndices.set(membershipNo, []);
+    membershipNoToIndices.get(membershipNo).push(idx);
   });
 
   const duplicateIssueByIndex = new Map();
@@ -105,7 +154,21 @@ export async function validateMembersSheet(buffer, adminId) {
         row: rowNumbers[idx],
         name: rows[idx].name,
         email: rows[idx].email,
-        issue: `Duplicate entry within this upload (also Row ${otherRows.join(', ')})`,
+        issue: `Duplicate email within this upload (also Row ${otherRows.join(', ')})`,
+        type: 'Duplicate',
+      });
+    }
+  }
+  for (const indices of membershipNoToIndices.values()) {
+    if (indices.length < 2) continue;
+    for (const idx of indices) {
+      if (duplicateIssueByIndex.has(idx)) continue; // email duplicate already flagged
+      const otherRows = indices.filter(i => i !== idx).map(i => rowNumbers[i]);
+      duplicateIssueByIndex.set(idx, {
+        row: rowNumbers[idx],
+        name: rows[idx].name,
+        email: rows[idx].email,
+        issue: `Duplicate membership number within this upload (also Row ${otherRows.join(', ')})`,
         type: 'Duplicate',
       });
     }
@@ -116,24 +179,26 @@ export async function validateMembersSheet(buffer, adminId) {
     .map((_, idx) => idx)
     .filter(idx => !formatIssueByIndex.has(idx) && !duplicateIssueByIndex.has(idx));
   const candidateEmails = candidateIndices.map(idx => rows[idx].email.toString().toLowerCase().trim());
+  const candidateMembershipNos = candidateIndices.map(idx => rows[idx].membershipNo.toString().trim());
 
-  const existing = candidateEmails.length > 0 ? await memberRepository.findMemberEmails(candidateEmails) : [];
-  const existingEmails = new Set(existing.map(m => m.email.toLowerCase()));
+  const existing = candidateIndices.length > 0
+    ? await memberRepository.findConflictingMembers({ emails: candidateEmails, membershipNos: candidateMembershipNos })
+    : [];
+  const existingEmails = new Set(existing.map(m => m.email?.toLowerCase()).filter(Boolean));
+  const existingMembershipNos = new Set(existing.map(m => m.membershipNo).filter(Boolean));
 
   const dbConflictIssueByIndex = new Map();
   candidateIndices.forEach(idx => {
     const email = rows[idx].email.toString().toLowerCase().trim();
+    const membershipNo = rows[idx].membershipNo.toString().trim();
     if (existingEmails.has(email)) {
-      dbConflictIssueByIndex.set(idx, {
-        row: rowNumbers[idx],
-        name: rows[idx].name,
-        email: rows[idx].email,
-        issue: 'Email already exists in member records',
-        type: 'Conflict',
-      });
+      dbConflictIssueByIndex.set(idx, { row: rowNumbers[idx], name: rows[idx].name, email: rows[idx].email, issue: 'Email already exists in member records', type: 'Conflict' });
+    } else if (existingMembershipNos.has(membershipNo)) {
+      dbConflictIssueByIndex.set(idx, { row: rowNumbers[idx], name: rows[idx].name, email: rows[idx].email, issue: 'Membership number already exists in member records', type: 'Conflict' });
     }
   });
 
+  const errorRows = [];
   rows.forEach((_, idx) => {
     const issue = formatIssueByIndex.get(idx) ?? duplicateIssueByIndex.get(idx) ?? dbConflictIssueByIndex.get(idx);
     if (issue) errorRows.push(issue);
@@ -173,21 +238,26 @@ export async function confirmMembersImport(batchId) {
 
   const { rows } = batch;
   const emails = rows.map(row => row.email.toString().toLowerCase().trim());
-  const existing = await memberRepository.findMemberEmails(emails);
+  const membershipNos = rows.map(row => row.membershipNo.toString().trim());
+  const existing = await memberRepository.findConflictingMembers({ emails, membershipNos });
 
   if (existing.length > 0) {
     await pendingMemberImportRepository.deleteBatch(batchId);
-    const existingEmails = new Set(existing.map(m => m.email.toLowerCase()));
+    const existingEmails = new Set(existing.map(m => m.email?.toLowerCase()).filter(Boolean));
+    const existingMembershipNos = new Set(existing.map(m => m.membershipNo).filter(Boolean));
     const errors = rows
-      .map((row, idx) => ({ row, idx }))
-      .filter(({ row }) => existingEmails.has(row.email.toString().toLowerCase().trim()))
-      .map(({ row, idx }) => ({
-        row: idx + 2,
-        name: row.name,
-        email: row.email,
-        issue: 'Email already exists in member records',
-        type: 'Conflict',
-      }));
+      .map((row, idx) => {
+        const email = row.email.toString().toLowerCase().trim();
+        const membershipNo = row.membershipNo.toString().trim();
+        if (existingEmails.has(email)) {
+          return { row: idx + 2, name: row.name, email: row.email, issue: 'Email already exists in member records', type: 'Conflict' };
+        }
+        if (existingMembershipNos.has(membershipNo)) {
+          return { row: idx + 2, name: row.name, email: row.email, issue: 'Membership number already exists in member records', type: 'Conflict' };
+        }
+        return null;
+      })
+      .filter(Boolean);
     throw new AppError(MESSAGES.MEMBERS.BATCH_CONFLICT_ON_CONFIRM, 409, { errors });
   }
 
