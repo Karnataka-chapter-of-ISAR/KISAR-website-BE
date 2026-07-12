@@ -14,3 +14,11 @@ export function findMemberByEmail(email) {
 export function insertMembers(rows) {
   return Member.insertMany(rows);
 }
+
+export function findMembersPaginated({ skip, limit }) {
+  return Member.find().sort({ name: 1 }).skip(skip).limit(limit).lean();
+}
+
+export function countMembers() {
+  return Member.countDocuments();
+}

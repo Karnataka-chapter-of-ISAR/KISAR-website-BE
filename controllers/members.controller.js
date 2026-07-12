@@ -1,8 +1,10 @@
-import { validateMembersSheet, confirmMembersImport } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, listMembers } from '../services/members.service.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
 import { toImportMembersResponseDto } from '../dto/members/importMembers.response.dto.js';
+import { toAdminMemberResponseDto, toPublicMemberResponseDto } from '../dto/members/member.response.dto.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 import { MESSAGES } from '../constants/messages.js';
 
 export async function validateMembersImportController(req, res) {
@@ -39,4 +41,30 @@ export async function confirmMembersImportController(req, res) {
     }
     throw err;
   }
+}
+
+export async function listMembersAdminController(req, res) {
+  const { page, limit, skip } = parsePagination(req.query);
+  const { members, totalCount } = await listMembers({ skip, limit });
+
+  return sendSuccess(res, {
+    message: MESSAGES.MEMBERS.FETCH_SUCCESS,
+    data: {
+      members: members.map(toAdminMemberResponseDto),
+      pagination: buildPaginationMeta({ page, limit, totalCount }),
+    },
+  });
+}
+
+export async function listMembersController(req, res) {
+  const { page, limit, skip } = parsePagination(req.query);
+  const { members, totalCount } = await listMembers({ skip, limit });
+
+  return sendSuccess(res, {
+    message: MESSAGES.MEMBERS.FETCH_SUCCESS,
+    data: {
+      members: members.map(toPublicMemberResponseDto),
+      pagination: buildPaginationMeta({ page, limit, totalCount }),
+    },
+  });
 }

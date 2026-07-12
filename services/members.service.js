@@ -268,3 +268,11 @@ export async function confirmMembersImport(batchId) {
 
   return inserted.length;
 }
+
+export async function listMembers({ skip, limit }) {
+  const [members, totalCount] = await Promise.all([
+    memberRepository.findMembersPaginated({ skip, limit }),
+    memberRepository.countMembers(),
+  ]);
+  return { members, totalCount };
+}

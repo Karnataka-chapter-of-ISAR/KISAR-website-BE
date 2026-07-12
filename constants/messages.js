@@ -36,6 +36,7 @@ export const MESSAGES = {
   },
 
   MEMBERS: {
+    FETCH_SUCCESS:                'Members fetched successfully.',
     IMPORT_SUCCESS:              'Members imported successfully.',
     NO_FILE:                     'No file was uploaded. Please attach an Excel file.',
     INVALID_FILE_TYPE:           'Invalid file type. Please upload a valid .xlsx or .xls file.',
