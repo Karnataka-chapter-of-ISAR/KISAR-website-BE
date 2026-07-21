@@ -61,6 +61,15 @@ export const MESSAGES = {
     EVENT_FULL:         'This event has reached its capacity.',
   },
 
+  NEWS: {
+    CREATE_SUCCESS:   'Article created successfully.',
+    UPDATE_SUCCESS:   'Article updated successfully.',
+    DELETE_SUCCESS:   'Article deleted successfully.',
+    FETCH_SUCCESS:    'Articles fetched successfully.',
+    VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
+    NOT_FOUND:        'Article not found.',
+  },
+
   ADMIN: {
     TOKEN_MISSING: 'Admin access token is missing. Please log in again.',
     UNAUTHORIZED:  'You are not authorized to access admin resources.',

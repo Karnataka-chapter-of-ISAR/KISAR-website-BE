@@ -10,6 +10,8 @@ import membersRoutes from './routes/members.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import adminEventsRoutes from './routes/admin/events.routes.js';
 import adminMembersRoutes from './routes/admin/members.routes.js';
+import newsRoutes from './routes/news.routes.js';
+import adminNewsRoutes from './routes/admin/news.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { authenticateToken } from './middleware/authenticate.js';
 import { sendSuccess, sendError } from './utils/response.js';
@@ -24,7 +26,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 app.set('trust proxy', 1);
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8080,http://localhost:8081,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
@@ -51,6 +53,8 @@ app.use('/members', membersRoutes);
 app.use('/events', eventsRoutes);
 app.use('/admin/events', adminEventsRoutes);
 app.use('/admin/members', adminMembersRoutes);
+app.use('/news', newsRoutes);
+app.use('/admin/news', adminNewsRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
