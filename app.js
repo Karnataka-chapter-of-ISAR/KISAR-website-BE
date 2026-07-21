@@ -26,7 +26,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 app.set('trust proxy', 1);
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8080,http://localhost:8081,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
