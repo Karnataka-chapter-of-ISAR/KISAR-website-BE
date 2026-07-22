@@ -31,6 +31,40 @@ export function toAdminMemberResponseDto(member) {
   };
 }
 
+// Self profile view: a member fetching their own record, so all fields are safe to expose.
+export function toSelfMemberResponseDto(member) {
+  return {
+    id:                 member._id,
+    membershipNo:       member.membershipNo,
+    name:               member.name,
+    title:              member.title,
+    membershipCategory: member.membershipCategory,
+    email:              member.email,
+    alternateEmail:     member.alternateEmail,
+    phone:              member.phone,
+    alternatePhone:     member.alternatePhone,
+    designation:        member.designation,
+    specialization:     member.specialization,
+    institution:        member.institution,
+    address:            member.address,
+    city:               member.city,
+    district:           member.district,
+    state:              member.state,
+    pincode:            member.pincode,
+    country:            member.country,
+    zone:               member.zone,
+    chapter:            member.chapter,
+    linkedin:           member.linkedin,
+    joined:             member.joined,
+    privacy:            member.privacy,
+    lat:                member.lat,
+    lng:                member.lng,
+    colorIndex:         member.colorIndex,
+    createdAt:          member.createdAt,
+    updatedAt:          member.updatedAt,
+  };
+}
+
 // Public directory view for member-facing listing: no contact info, address, or membership number.
 export function toPublicMemberResponseDto(member) {
   return {

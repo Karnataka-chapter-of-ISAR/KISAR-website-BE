@@ -31,12 +31,10 @@ export const MESSAGES = {
     REFRESHED:         'Access token refreshed successfully.',
   },
 
-  USER: {
-    FETCH_SUCCESS: 'User details fetched successfully.',
-  },
-
   MEMBERS: {
     FETCH_SUCCESS:                'Members fetched successfully.',
+    PROFILE_FETCH_SUCCESS:       'Profile fetched successfully.',
+    SESSION_MEMBER_NOT_FOUND:    'Your session is no longer valid. Please log in again.',
     IMPORT_SUCCESS:              'Members imported successfully.',
     NO_FILE:                     'No file was uploaded. Please attach an Excel file.',
     INVALID_FILE_TYPE:           'Invalid file type. Please upload a valid .xlsx or .xls file.',

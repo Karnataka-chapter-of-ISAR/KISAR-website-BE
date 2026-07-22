@@ -11,7 +11,6 @@ import eventsRoutes from './routes/events.routes.js';
 import adminEventsRoutes from './routes/admin/events.routes.js';
 import adminMembersRoutes from './routes/admin/members.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
-import { authenticateToken } from './middleware/authenticate.js';
 import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
@@ -42,10 +41,6 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => sendSuccess(res, { message: MESSAGES.GENERAL.SERVER_OK }));
 
 app.use('/auth', authRoutes);
-
-app.get('/me', authenticateToken, (req, res) => {
-  sendSuccess(res, { message: MESSAGES.USER.FETCH_SUCCESS, data: { email: req.user.email } });
-});
 
 app.use('/members', membersRoutes);
 app.use('/events', eventsRoutes);

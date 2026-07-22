@@ -276,3 +276,11 @@ export async function listMembers({ skip, limit }) {
   ]);
   return { members, totalCount };
 }
+
+export async function getOwnProfile(email) {
+  const member = await memberRepository.findMemberByEmail(email);
+  if (!member) {
+    throw new AppError(MESSAGES.MEMBERS.SESSION_MEMBER_NOT_FOUND, 401);
+  }
+  return member;
+}

@@ -1,7 +1,7 @@
-import { validateMembersSheet, confirmMembersImport, listMembers } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, listMembers, getOwnProfile } from '../services/members.service.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
 import { toImportMembersResponseDto } from '../dto/members/importMembers.response.dto.js';
-import { toAdminMemberResponseDto, toPublicMemberResponseDto } from '../dto/members/member.response.dto.js';
+import { toAdminMemberResponseDto, toPublicMemberResponseDto, toSelfMemberResponseDto } from '../dto/members/member.response.dto.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
@@ -67,4 +67,19 @@ export async function listMembersController(req, res) {
       pagination: buildPaginationMeta({ page, limit, totalCount }),
     },
   });
+}
+
+export async function getOwnProfileController(req, res) {
+  try {
+    const member = await getOwnProfile(req.user.email);
+    return sendSuccess(res, {
+      message: MESSAGES.MEMBERS.PROFILE_FETCH_SUCCESS,
+      data: { member: toSelfMemberResponseDto(member) },
+    });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
 }
