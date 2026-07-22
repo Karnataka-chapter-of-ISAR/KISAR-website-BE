@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { UPLOADS_DIR } from '../middleware/uploadBannerImage.js';
+import { NEWS_UPLOADS_DIR } from '../middleware/uploadNewsBannerImage.js';
 import logger from './logger.js';
 
 // Single point of contact for removing a stored banner image. Today this is a local
@@ -15,6 +16,19 @@ export async function deleteBannerImage(bannerImagePath) {
   } catch (err) {
     if (err.code !== 'ENOENT') {
       logger.error(`[deleteBannerImage] Failed to delete ${filePath}: ${err.message}`);
+    }
+  }
+}
+
+export async function deleteNewsBannerImage(bannerImagePath) {
+  if (!bannerImagePath) return;
+
+  const filePath = path.join(NEWS_UPLOADS_DIR, path.basename(bannerImagePath));
+  try {
+    await fs.unlink(filePath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      logger.error(`[deleteNewsBannerImage] Failed to delete ${filePath}: ${err.message}`);
     }
   }
 }
