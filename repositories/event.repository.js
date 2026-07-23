@@ -20,6 +20,14 @@ export function deleteEvent(eventId) {
   return Event.findByIdAndDelete(eventId).lean();
 }
 
+export function countUpcomingEvents(fromDate) {
+  return Event.countDocuments({ date: { $gte: fromDate } });
+}
+
+export function findNextEvent(fromDate) {
+  return Event.findOne({ date: { $gte: fromDate } }).sort({ date: 1, time: 1 }).lean();
+}
+
 export function registerMember(eventId, memberId) {
   return Event.findOneAndUpdate(
     {

@@ -73,4 +73,8 @@ export const MESSAGES = {
     UNAUTHORIZED:  'You are not authorized to access admin resources.',
   },
 
+  DASHBOARD: {
+    KPIS_FETCH_SUCCESS: 'Dashboard KPIs fetched successfully.',
+  },
+
 };

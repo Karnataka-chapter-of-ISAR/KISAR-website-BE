@@ -12,6 +12,7 @@ import adminEventsRoutes from './routes/admin/events.routes.js';
 import adminMembersRoutes from './routes/admin/members.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import adminNewsRoutes from './routes/admin/news.routes.js';
+import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
@@ -50,6 +51,7 @@ app.use('/admin/events', adminEventsRoutes);
 app.use('/admin/members', adminMembersRoutes);
 app.use('/news', newsRoutes);
 app.use('/admin/news', adminNewsRoutes);
+app.use('/admin/dashboard', adminDashboardRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
