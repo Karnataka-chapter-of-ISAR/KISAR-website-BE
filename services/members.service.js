@@ -13,9 +13,6 @@ const MEMBER_ID_COUNTER = 'memberId';
 
 const BATCH_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^(?:\+91)?[6-9]\d{9}$/;
-
 const REQUIRED_FIELDS = ['name', 'email', 'ISARMemberID'];
 
 // Maps normalised Excel header → schema field name. Covers both the plain
@@ -281,18 +278,19 @@ export async function confirmMembersImport(batchId) {
 
 export async function createMember(data) {
   const email = data.email.toLowerCase();
-  const membershipNo = data.membershipNo;
+  const isarMemberId = data.ISARMemberID;
 
-  const existing = await memberRepository.findConflictingMembers({ emails: [email], membershipNos: [membershipNo] });
+  const existing = await memberRepository.findConflictingMembers({ emails: [email], isarMemberIds: [isarMemberId] });
   if (existing.length > 0) {
     const emailTaken = existing.some(m => m.email?.toLowerCase() === email);
     throw new AppError(
-      emailTaken ? MESSAGES.MEMBERS.EMAIL_ALREADY_EXISTS : MESSAGES.MEMBERS.MEMBERSHIP_NO_ALREADY_EXISTS,
+      emailTaken ? MESSAGES.MEMBERS.EMAIL_ALREADY_EXISTS : MESSAGES.MEMBERS.ISAR_MEMBER_ID_ALREADY_EXISTS,
       409,
     );
   }
 
-  const member = await memberRepository.createMember(data);
+  const seq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, 1);
+  const member = await memberRepository.createMember({ ...data, memberId: formatMemberId(seq) });
   await sendWelcomeEmail(member);
 
   return member;
@@ -304,7 +302,8 @@ export async function exportMembersToExcel() {
   const members = await memberRepository.findAllMembersSorted();
 
   const rows = members.map(m => ({
-    'Membership No.':      m.membershipNo,
+    'Member ID':           m.memberId,
+    'ISAR Member ID':      m.ISARMemberID,
     'Name':                m.name,
     'Title':               m.title,
     'Membership Category': m.membershipCategory,

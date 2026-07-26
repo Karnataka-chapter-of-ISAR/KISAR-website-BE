@@ -10,14 +10,14 @@ const OPTIONAL_STRING_FIELDS = [
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateCreateMemberRequest(body = {}) {
   const errors = [];
-  const { name, email, membershipNo, phone, privacy, joined } = body;
+  const { name, email, ISARMemberID, phone, privacy, joined } = body;
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     errors.push('Name is required.');
   }
 
-  if (!membershipNo || typeof membershipNo !== 'string' || !membershipNo.trim()) {
-    errors.push('Membership number is required.');
+  if (!ISARMemberID || typeof ISARMemberID !== 'string' || !ISARMemberID.trim()) {
+    errors.push('ISAR member ID is required.');
   }
 
   if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
@@ -36,7 +36,7 @@ export function validateCreateMemberRequest(body = {}) {
 
   const data = {
     name: name.trim(),
-    membershipNo: membershipNo.trim(),
+    ISARMemberID: ISARMemberID.trim(),
     email: email.trim().toLowerCase(),
     phone: phone ? phone.toString().trim() : null,
     privacy: privacy || 'public',

@@ -47,7 +47,7 @@ export const MESSAGES = {
     CREATE_SUCCESS:              'Member added successfully.',
     VALIDATION_ERROR:            'Please fix the highlighted fields and try again.',
     EMAIL_ALREADY_EXISTS:        'A member with this email already exists.',
-    MEMBERSHIP_NO_ALREADY_EXISTS:'A member with this membership number already exists.',
+    ISAR_MEMBER_ID_ALREADY_EXISTS:'A member with this ISAR member ID already exists.',
   },
 
   EVENTS: {
