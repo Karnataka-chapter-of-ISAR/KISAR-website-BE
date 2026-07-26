@@ -2,14 +2,12 @@ import crypto from 'crypto';
 import * as XLSX from 'xlsx';
 import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
+import { EMAIL_REGEX, PHONE_REGEX } from '../constants/members.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as pendingMemberImportRepository from '../repositories/pendingMemberImport.repository.js';
 import { sendWelcomeEmail } from './notifications.service.js';
 
 const BATCH_TTL_MS = 30 * 60 * 1000; // 30 minutes
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^(?:\+91)?[6-9]\d{9}$/;
 
 const REQUIRED_FIELDS = ['name', 'email', 'membershipNo'];
 
@@ -267,6 +265,62 @@ export async function confirmMembersImport(batchId) {
   await Promise.allSettled(inserted.map(member => sendWelcomeEmail(member)));
 
   return inserted.length;
+}
+
+export async function createMember(data) {
+  const email = data.email.toLowerCase();
+  const membershipNo = data.membershipNo;
+
+  const existing = await memberRepository.findConflictingMembers({ emails: [email], membershipNos: [membershipNo] });
+  if (existing.length > 0) {
+    const emailTaken = existing.some(m => m.email?.toLowerCase() === email);
+    throw new AppError(
+      emailTaken ? MESSAGES.MEMBERS.EMAIL_ALREADY_EXISTS : MESSAGES.MEMBERS.MEMBERSHIP_NO_ALREADY_EXISTS,
+      409,
+    );
+  }
+
+  const member = await memberRepository.createMember(data);
+  await sendWelcomeEmail(member);
+
+  return member;
+}
+
+// Exports every member as an .xlsx workbook buffer, using the same field set/order
+// exposed to admins in the members table (see member.response.dto.js).
+export async function exportMembersToExcel() {
+  const members = await memberRepository.findAllMembersSorted();
+
+  const rows = members.map(m => ({
+    'Membership No.':      m.membershipNo,
+    'Name':                m.name,
+    'Title':               m.title,
+    'Membership Category': m.membershipCategory,
+    'Email':                m.email,
+    'Alternate Email':     m.alternateEmail,
+    'Phone':               m.phone,
+    'Alternate Phone':     m.alternatePhone,
+    'Designation':         m.designation,
+    'Specialization':      m.specialization,
+    'Institution':         m.institution,
+    'Address':             m.address,
+    'City':                m.city,
+    'District':            m.district,
+    'State':               m.state,
+    'Pincode':             m.pincode,
+    'Country':             m.country,
+    'Zone':                m.zone,
+    'Chapter':             m.chapter,
+    'LinkedIn':            m.linkedin,
+    'Joined':              m.joined,
+    'Privacy':             m.privacy,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 }
 
 export async function listMembers({ skip, limit }) {
