@@ -4,14 +4,18 @@ import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as pendingMemberImportRepository from '../repositories/pendingMemberImport.repository.js';
+import * as counterRepository from '../repositories/counter.repository.js';
+import { formatMemberId } from '../utils/memberId.js';
 import { sendWelcomeEmail } from './notifications.service.js';
+
+const MEMBER_ID_COUNTER = 'memberId';
 
 const BATCH_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^(?:\+91)?[6-9]\d{9}$/;
 
-const REQUIRED_FIELDS = ['name', 'email', 'membershipNo'];
+const REQUIRED_FIELDS = ['name', 'email', 'ISARMemberID'];
 
 // Maps normalised Excel header → schema field name. Covers both the plain
 // import template and the ISAR membership-registry export format.
@@ -33,7 +37,7 @@ const HEADER_MAP = {
   colorindex:        'colorIndex',
 
   // ISAR membership-registry export
-  'new membership no':      'membershipNo',
+  'new membership no':      'ISARMemberID',
   doctor:                    'title',
   'category of membership': 'membershipCategory',
   'full name':               'name',
@@ -49,7 +53,7 @@ const HEADER_MAP = {
 };
 
 const ADDRESS_HEADERS = new Set(['address 1', 'address 2', 'address 3']);
-const STRINGIFY_FIELDS = ['phone', 'alternatePhone', 'pincode', 'membershipNo'];
+const STRINGIFY_FIELDS = ['phone', 'alternatePhone', 'pincode', 'ISARMemberID'];
 
 function normalizeHeader(key) {
   return key.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -130,9 +134,9 @@ export async function validateMembersSheet(buffer, adminId) {
     if (issue) formatIssueByIndex.set(idx, issue);
   });
 
-  // ── Intra-sheet duplicates (email checked first, then membership number) ────
+  // ── Intra-sheet duplicates (email checked first, then ISAR member ID) ───────
   const emailToIndices = new Map();
-  const membershipNoToIndices = new Map();
+  const isarMemberIdToIndices = new Map();
   rows.forEach((row, idx) => {
     if (formatIssueByIndex.has(idx)) return;
 
@@ -140,9 +144,9 @@ export async function validateMembersSheet(buffer, adminId) {
     if (!emailToIndices.has(email)) emailToIndices.set(email, []);
     emailToIndices.get(email).push(idx);
 
-    const membershipNo = row.membershipNo.toString().trim();
-    if (!membershipNoToIndices.has(membershipNo)) membershipNoToIndices.set(membershipNo, []);
-    membershipNoToIndices.get(membershipNo).push(idx);
+    const isarMemberId = row.ISARMemberID.toString().trim();
+    if (!isarMemberIdToIndices.has(isarMemberId)) isarMemberIdToIndices.set(isarMemberId, []);
+    isarMemberIdToIndices.get(isarMemberId).push(idx);
   });
 
   const duplicateIssueByIndex = new Map();
@@ -159,7 +163,7 @@ export async function validateMembersSheet(buffer, adminId) {
       });
     }
   }
-  for (const indices of membershipNoToIndices.values()) {
+  for (const indices of isarMemberIdToIndices.values()) {
     if (indices.length < 2) continue;
     for (const idx of indices) {
       if (duplicateIssueByIndex.has(idx)) continue; // email duplicate already flagged
@@ -168,7 +172,7 @@ export async function validateMembersSheet(buffer, adminId) {
         row: rowNumbers[idx],
         name: rows[idx].name,
         email: rows[idx].email,
-        issue: `Duplicate membership number within this upload (also Row ${otherRows.join(', ')})`,
+        issue: `Duplicate ISAR member ID within this upload (also Row ${otherRows.join(', ')})`,
         type: 'Duplicate',
       });
     }
@@ -179,22 +183,22 @@ export async function validateMembersSheet(buffer, adminId) {
     .map((_, idx) => idx)
     .filter(idx => !formatIssueByIndex.has(idx) && !duplicateIssueByIndex.has(idx));
   const candidateEmails = candidateIndices.map(idx => rows[idx].email.toString().toLowerCase().trim());
-  const candidateMembershipNos = candidateIndices.map(idx => rows[idx].membershipNo.toString().trim());
+  const candidateIsarMemberIds = candidateIndices.map(idx => rows[idx].ISARMemberID.toString().trim());
 
   const existing = candidateIndices.length > 0
-    ? await memberRepository.findConflictingMembers({ emails: candidateEmails, membershipNos: candidateMembershipNos })
+    ? await memberRepository.findConflictingMembers({ emails: candidateEmails, isarMemberIds: candidateIsarMemberIds })
     : [];
   const existingEmails = new Set(existing.map(m => m.email?.toLowerCase()).filter(Boolean));
-  const existingMembershipNos = new Set(existing.map(m => m.membershipNo).filter(Boolean));
+  const existingIsarMemberIds = new Set(existing.map(m => m.ISARMemberID).filter(Boolean));
 
   const dbConflictIssueByIndex = new Map();
   candidateIndices.forEach(idx => {
     const email = rows[idx].email.toString().toLowerCase().trim();
-    const membershipNo = rows[idx].membershipNo.toString().trim();
+    const isarMemberId = rows[idx].ISARMemberID.toString().trim();
     if (existingEmails.has(email)) {
       dbConflictIssueByIndex.set(idx, { row: rowNumbers[idx], name: rows[idx].name, email: rows[idx].email, issue: 'Email already exists in member records', type: 'Conflict' });
-    } else if (existingMembershipNos.has(membershipNo)) {
-      dbConflictIssueByIndex.set(idx, { row: rowNumbers[idx], name: rows[idx].name, email: rows[idx].email, issue: 'Membership number already exists in member records', type: 'Conflict' });
+    } else if (existingIsarMemberIds.has(isarMemberId)) {
+      dbConflictIssueByIndex.set(idx, { row: rowNumbers[idx], name: rows[idx].name, email: rows[idx].email, issue: 'ISAR member ID already exists in member records', type: 'Conflict' });
     }
   });
 
@@ -238,28 +242,33 @@ export async function confirmMembersImport(batchId) {
 
   const { rows } = batch;
   const emails = rows.map(row => row.email.toString().toLowerCase().trim());
-  const membershipNos = rows.map(row => row.membershipNo.toString().trim());
-  const existing = await memberRepository.findConflictingMembers({ emails, membershipNos });
+  const isarMemberIds = rows.map(row => row.ISARMemberID.toString().trim());
+  const existing = await memberRepository.findConflictingMembers({ emails, isarMemberIds });
 
   if (existing.length > 0) {
     await pendingMemberImportRepository.deleteBatch(batchId);
     const existingEmails = new Set(existing.map(m => m.email?.toLowerCase()).filter(Boolean));
-    const existingMembershipNos = new Set(existing.map(m => m.membershipNo).filter(Boolean));
+    const existingIsarMemberIds = new Set(existing.map(m => m.ISARMemberID).filter(Boolean));
     const errors = rows
       .map((row, idx) => {
         const email = row.email.toString().toLowerCase().trim();
-        const membershipNo = row.membershipNo.toString().trim();
+        const isarMemberId = row.ISARMemberID.toString().trim();
         if (existingEmails.has(email)) {
           return { row: idx + 2, name: row.name, email: row.email, issue: 'Email already exists in member records', type: 'Conflict' };
         }
-        if (existingMembershipNos.has(membershipNo)) {
-          return { row: idx + 2, name: row.name, email: row.email, issue: 'Membership number already exists in member records', type: 'Conflict' };
+        if (existingIsarMemberIds.has(isarMemberId)) {
+          return { row: idx + 2, name: row.name, email: row.email, issue: 'ISAR member ID already exists in member records', type: 'Conflict' };
         }
         return null;
       })
       .filter(Boolean);
     throw new AppError(MESSAGES.MEMBERS.BATCH_CONFLICT_ON_CONFIRM, 409, { errors });
   }
+
+  const startSeq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, rows.length);
+  rows.forEach((row, idx) => {
+    row.memberId = formatMemberId(startSeq + idx);
+  });
 
   const inserted = await memberRepository.insertMembers(rows);
   await pendingMemberImportRepository.deleteBatch(batchId);

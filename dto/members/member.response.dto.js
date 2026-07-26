@@ -1,7 +1,8 @@
 export function toAdminMemberResponseDto(member) {
   return {
     id:                 member._id,
-    membershipNo:       member.membershipNo,
+    memberId:           member.memberId,
+    ISARMemberID:       member.ISARMemberID,
     name:               member.name,
     title:              member.title,
     membershipCategory: member.membershipCategory,
@@ -35,7 +36,8 @@ export function toAdminMemberResponseDto(member) {
 export function toSelfMemberResponseDto(member) {
   return {
     id:                 member._id,
-    membershipNo:       member.membershipNo,
+    memberId:           member.memberId,
+    ISARMemberID:       member.ISARMemberID,
     name:               member.name,
     title:              member.title,
     membershipCategory: member.membershipCategory,
@@ -65,7 +67,7 @@ export function toSelfMemberResponseDto(member) {
   };
 }
 
-// Public directory view for member-facing listing: no contact info, address, or membership number.
+// Public directory view for member-facing listing: no contact info or membership number.
 export function toPublicMemberResponseDto(member) {
   return {
     id:                 member._id,
@@ -75,8 +77,11 @@ export function toPublicMemberResponseDto(member) {
     designation:        member.designation,
     specialization:     member.specialization,
     institution:        member.institution,
+    address:            member.address,
     city:               member.city,
+    district:           member.district,
     state:              member.state,
+    pincode:            member.pincode,
     country:            member.country,
   };
 }

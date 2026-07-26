@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const memberSchema = new mongoose.Schema(
   {
-    membershipNo:      { type: String, required: true, unique: true, sparse: true, trim: true },
+    memberId:          { type: String, unique: true, sparse: true, trim: true },
+    ISARMemberID:      { type: String, required: true, unique: true, sparse: true, trim: true },
     name:              { type: String, required: true, trim: true },
     title:             { type: String, trim: true, default: null },
     membershipCategory:{ type: String, trim: true, default: null },

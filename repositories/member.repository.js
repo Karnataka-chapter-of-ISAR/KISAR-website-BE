@@ -1,9 +1,9 @@
 import Member from '../models/Member.js';
 
-export function findConflictingMembers({ emails, membershipNos }) {
+export function findConflictingMembers({ emails, isarMemberIds }) {
   return Member.find(
-    { $or: [{ email: { $in: emails } }, { membershipNo: { $in: membershipNos } }] },
-    { email: 1, membershipNo: 1, _id: 0 },
+    { $or: [{ email: { $in: emails } }, { ISARMemberID: { $in: isarMemberIds } }] },
+    { email: 1, ISARMemberID: 1, _id: 0 },
   ).lean();
 }
 
