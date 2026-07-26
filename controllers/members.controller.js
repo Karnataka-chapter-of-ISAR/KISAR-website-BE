@@ -1,4 +1,5 @@
-import { validateMembersSheet, confirmMembersImport, listMembers, getOwnProfile } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, exportMembersToExcel, listMembers, getOwnProfile } from '../services/members.service.js';
+import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
 import { toImportMembersResponseDto } from '../dto/members/importMembers.response.dto.js';
 import { toAdminMemberResponseDto, toPublicMemberResponseDto, toSelfMemberResponseDto } from '../dto/members/member.response.dto.js';
@@ -41,6 +42,39 @@ export async function confirmMembersImportController(req, res) {
     }
     throw err;
   }
+}
+
+export async function createMemberController(req, res) {
+  const { valid, errors, data } = validateCreateMemberRequest(req.body);
+  if (!valid) {
+    return sendError(res, {
+      message: MESSAGES.MEMBERS.VALIDATION_ERROR,
+      statusCode: 422,
+      data: { errors },
+    });
+  }
+
+  try {
+    const member = await createMember(data);
+    return sendSuccess(res, {
+      message: MESSAGES.MEMBERS.CREATE_SUCCESS,
+      statusCode: 201,
+      data: { member: toAdminMemberResponseDto(member) },
+    });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
+}
+
+export async function exportMembersController(req, res) {
+  const buffer = await exportMembersToExcel();
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="members.xlsx"');
+  return res.send(buffer);
 }
 
 export async function listMembersAdminController(req, res) {
