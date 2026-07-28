@@ -43,15 +43,17 @@ app.use((req, res, next) => {
 // health API
 app.get('/', (req, res) => sendSuccess(res, { message: MESSAGES.GENERAL.SERVER_OK }));
 
-app.use('/auth', authRoutes);
+const API_V1 = '/api/v1';
 
-app.use('/members', membersRoutes);
-app.use('/events', eventsRoutes);
-app.use('/admin/events', adminEventsRoutes);
-app.use('/admin/members', adminMembersRoutes);
-app.use('/news', newsRoutes);
-app.use('/admin/news', adminNewsRoutes);
-app.use('/admin/dashboard', adminDashboardRoutes);
+app.use(`${API_V1}/auth`, authRoutes);
+
+app.use(`${API_V1}/members`, membersRoutes);
+app.use(`${API_V1}/events`, eventsRoutes);
+app.use(`${API_V1}/admin/events`, adminEventsRoutes);
+app.use(`${API_V1}/admin/members`, adminMembersRoutes);
+app.use(`${API_V1}/news`, newsRoutes);
+app.use(`${API_V1}/admin/news`, adminNewsRoutes);
+app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {

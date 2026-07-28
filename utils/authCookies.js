@@ -11,12 +11,14 @@ function cookieOpts(maxAge) {
   };
 }
 
+const REFRESH_TOKEN_COOKIE_PATH = '/api/v1/auth';
+
 export function setAuthCookies(res, { accessToken, refreshToken }) {
   res.cookie('auth_token',    accessToken,  cookieOpts(ACCESS_TOKEN_COOKIE_MAX_AGE_MS));
-  res.cookie('refresh_token', refreshToken, { ...cookieOpts(REFRESH_TOKEN_COOKIE_MAX_AGE_MS), path: '/auth' });
+  res.cookie('refresh_token', refreshToken, { ...cookieOpts(REFRESH_TOKEN_COOKIE_MAX_AGE_MS), path: REFRESH_TOKEN_COOKIE_PATH });
 }
 
 export function clearAuthCookies(res) {
   res.clearCookie('auth_token',    cookieOpts(0));
-  res.clearCookie('refresh_token', { ...cookieOpts(0), path: '/auth' });
+  res.clearCookie('refresh_token', { ...cookieOpts(0), path: REFRESH_TOKEN_COOKIE_PATH });
 }

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import * as XLSX from 'xlsx';
 import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
@@ -292,6 +293,31 @@ export async function createMember(data) {
   const seq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, 1);
   const member = await memberRepository.createMember({ ...data, memberId: formatMemberId(seq) });
   await sendWelcomeEmail(member);
+
+  return member;
+}
+
+export async function updateMember(memberId, data) {
+  if (!mongoose.Types.ObjectId.isValid(memberId)) throw new AppError(MESSAGES.MEMBERS.NOT_FOUND, 404);
+
+  const email = data.email.toLowerCase();
+  const isarMemberId = data.ISARMemberID;
+
+  const existing = await memberRepository.findConflictingMembers({
+    emails: [email],
+    isarMemberIds: [isarMemberId],
+    excludeId: memberId,
+  });
+  if (existing.length > 0) {
+    const emailTaken = existing.some(m => m.email?.toLowerCase() === email);
+    throw new AppError(
+      emailTaken ? MESSAGES.MEMBERS.EMAIL_ALREADY_EXISTS : MESSAGES.MEMBERS.ISAR_MEMBER_ID_ALREADY_EXISTS,
+      409,
+    );
+  }
+
+  const member = await memberRepository.updateMemberById(memberId, data);
+  if (!member) throw new AppError(MESSAGES.MEMBERS.NOT_FOUND, 404);
 
   return member;
 }

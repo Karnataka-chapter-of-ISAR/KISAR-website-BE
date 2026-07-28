@@ -45,6 +45,8 @@ export const MESSAGES = {
     BATCH_NOT_FOUND_OR_EXPIRED:  'This validated batch was not found or has expired. Please re-upload and validate again.',
     BATCH_CONFLICT_ON_CONFIRM:   'Some emails were added to the system after validation. Please re-upload and validate again.',
     CREATE_SUCCESS:              'Member added successfully.',
+    UPDATE_SUCCESS:              'Member updated successfully.',
+    NOT_FOUND:                   'Member not found.',
     VALIDATION_ERROR:            'Please fix the highlighted fields and try again.',
     EMAIL_ALREADY_EXISTS:        'A member with this email already exists.',
     ISAR_MEMBER_ID_ALREADY_EXISTS:'A member with this ISAR member ID already exists.',
