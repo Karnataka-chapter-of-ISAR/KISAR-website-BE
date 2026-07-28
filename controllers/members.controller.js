@@ -1,4 +1,4 @@
-import { validateMembersSheet, confirmMembersImport, createMember, exportMembersToExcel, listMembers, getOwnProfile } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, getOwnProfile } from '../services/members.service.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
 import { toImportMembersResponseDto } from '../dto/members/importMembers.response.dto.js';
@@ -59,6 +59,30 @@ export async function createMemberController(req, res) {
     return sendSuccess(res, {
       message: MESSAGES.MEMBERS.CREATE_SUCCESS,
       statusCode: 201,
+      data: { member: toAdminMemberResponseDto(member) },
+    });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
+}
+
+export async function updateMemberController(req, res) {
+  const { valid, errors, data } = validateCreateMemberRequest(req.body);
+  if (!valid) {
+    return sendError(res, {
+      message: MESSAGES.MEMBERS.VALIDATION_ERROR,
+      statusCode: 422,
+      data: { errors },
+    });
+  }
+
+  try {
+    const member = await updateMember(req.params.id, data);
+    return sendSuccess(res, {
+      message: MESSAGES.MEMBERS.UPDATE_SUCCESS,
       data: { member: toAdminMemberResponseDto(member) },
     });
   } catch (err) {
