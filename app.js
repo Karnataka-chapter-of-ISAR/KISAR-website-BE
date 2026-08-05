@@ -12,6 +12,8 @@ import adminEventsRoutes from './routes/admin/events.routes.js';
 import adminMembersRoutes from './routes/admin/members.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import adminNewsRoutes from './routes/admin/news.routes.js';
+import galleryRoutes from './routes/gallery.routes.js';
+import adminGalleryRoutes from './routes/admin/gallery.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { sendSuccess, sendError } from './utils/response.js';
@@ -53,6 +55,8 @@ app.use(`${API_V1}/admin/events`, adminEventsRoutes);
 app.use(`${API_V1}/admin/members`, adminMembersRoutes);
 app.use(`${API_V1}/news`, newsRoutes);
 app.use(`${API_V1}/admin/news`, adminNewsRoutes);
+app.use(`${API_V1}/gallery`, galleryRoutes);
+app.use(`${API_V1}/admin/gallery`, adminGalleryRoutes);
 app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
 
 app.use((err, req, res, next) => {

@@ -74,6 +74,16 @@ export const MESSAGES = {
     NOT_FOUND:        'Article not found.',
   },
 
+  GALLERY: {
+    CREATE_SUCCESS:   'Photo added successfully.',
+    UPDATE_SUCCESS:   'Photo updated successfully.',
+    DELETE_SUCCESS:   'Photo deleted successfully.',
+    FETCH_SUCCESS:    'Gallery fetched successfully.',
+    VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
+    NOT_FOUND:        'Photo not found.',
+    IMAGE_REQUIRED:   'Please upload an image.',
+  },
+
   ADMIN: {
     TOKEN_MISSING: 'Admin access token is missing. Please log in again.',
     UNAUTHORIZED:  'You are not authorized to access admin resources.',
