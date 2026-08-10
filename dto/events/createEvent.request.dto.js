@@ -6,7 +6,7 @@ const LINK_LABEL_MAX_LENGTH = 50;
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateCreateEventRequest(body = {}) {
   const errors = [];
-  const { title, type, capacity, date, time, location, link, linkLabel } = body;
+  const { title, type, capacity, date, time, location, link, linkLabel, isHighlighted } = body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     errors.push('Event title is required.');
@@ -48,6 +48,8 @@ export function validateCreateEventRequest(body = {}) {
 
   if (errors.length > 0) return { valid: false, errors };
 
+  const parsedIsHighlighted = isHighlighted === true || isHighlighted === 'true';
+
   return {
     valid: true,
     data: {
@@ -59,6 +61,7 @@ export function validateCreateEventRequest(body = {}) {
       location: location.trim(),
       link: link ? link.trim() : null,
       linkLabel: linkLabel ? linkLabel.trim() : undefined,
+      isHighlighted: parsedIsHighlighted,
     },
   };
 }
