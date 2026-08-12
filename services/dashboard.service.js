@@ -13,3 +13,13 @@ export async function getDashboardKpis() {
 
   return { totalMembers, upcomingEventsCount, nextEvent };
 }
+
+
+export async function getDashboardOverview() {
+  const [totalUsers, events] = await Promise.all([
+    memberRepository.countMembers(),
+    eventRepository.findAllEvents(),
+  ]);
+
+  return { totalUsers, events };
+}
