@@ -8,7 +8,7 @@ const router = Router();
 
 router.get('/', authenticateAdmin, getEventsController);
 router.post('/', authenticateAdmin, uploadBannerImage, createEventController);
-router.put('/:id', authenticateAdmin, uploadBannerImage, updateEventController);
+router.patch('/:id', authenticateAdmin, uploadBannerImage, updateEventController);
 router.delete('/:id', authenticateAdmin, deleteEventController);
 
 export default router;

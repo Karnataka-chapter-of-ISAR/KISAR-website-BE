@@ -1,4 +1,5 @@
 import { validateCreateEventRequest } from '../dto/events/createEvent.request.dto.js';
+import { validateUpdateEventRequest } from '../dto/events/updateEvent.request.dto.js';
 import { toEventResponseDto } from '../dto/events/event.response.dto.js';
 import { createEvent, updateEvent, deleteEvent, listEventsForMember, registerForEvent } from '../services/events.service.js';
 import { AppError } from '../utils/AppError.js';
@@ -26,7 +27,7 @@ export async function createEventController(req, res) {
 }
 
 export async function updateEventController(req, res) {
-  const { valid, errors, data } = validateCreateEventRequest(req.body);
+  const { valid, errors, data } = validateUpdateEventRequest(req.body);
   if (!valid) {
     return sendError(res, {
       message: MESSAGES.EVENTS.VALIDATION_ERROR,
