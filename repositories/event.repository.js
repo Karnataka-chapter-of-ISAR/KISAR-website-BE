@@ -8,6 +8,10 @@ export function findAllEvents() {
   return Event.find().sort({ date: 1, time: 1 }).lean();
 }
 
+export function findHighlightedEvents(fromDate) {
+  return Event.find({ isHighlighted: true, date: { $gte: fromDate } }).sort({ date: 1, time: 1 }).lean();
+}
+
 export function findEventById(eventId) {
   return Event.findById(eventId).lean();
 }

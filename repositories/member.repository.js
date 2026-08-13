@@ -41,3 +41,7 @@ export function findAllMembersSorted() {
 export function countMembers() {
   return Member.countDocuments();
 }
+
+export function countDistinctDistricts() {
+  return Member.distinct('district', { district: { $nin: [null, ''] } });
+}

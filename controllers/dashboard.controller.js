@@ -14,7 +14,7 @@ export async function getDashboardKpisController(req, res) {
 }
 
 export async function getDashboardOverviewController(req, res) {
-  const overview = await getDashboardOverview();
+  const overview = await getDashboardOverview({ email: req.user?.email });
 
   return sendSuccess(res, {
     message: MESSAGES.DASHBOARD.OVERVIEW_FETCH_SUCCESS,

@@ -19,3 +19,22 @@ export async function authenticateToken(req, res, next) {
   req.token = token;
   next();
 }
+
+// Decodes the access token when present, but never rejects the request —
+// used by public endpoints that personalize their response for logged-in users.
+export async function authenticateOptionalToken(req, res, next) {
+  const token = req.cookies.auth_token;
+  if (!token) return next();
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (!(await isTokenBlacklisted(token))) {
+      req.user = payload;
+      req.token = token;
+    }
+  } catch {
+    // invalid/expired token — treat the request as anonymous
+  }
+
+  next();
+}
