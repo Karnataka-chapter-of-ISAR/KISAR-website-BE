@@ -6,6 +6,7 @@ import { MESSAGES } from '../constants/messages.js';
 import { EMAIL_REGEX, PHONE_REGEX } from '../constants/members.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as pendingMemberImportRepository from '../repositories/pendingMemberImport.repository.js';
+import * as memberEditRequestRepository from '../repositories/memberEditRequest.repository.js';
 import * as counterRepository from '../repositories/counter.repository.js';
 import { formatMemberId } from '../utils/memberId.js';
 import { sendWelcomeEmail } from './notifications.service.js';
@@ -297,23 +298,38 @@ export async function createMember(data) {
   return member;
 }
 
+// Partial update from the admin grid (AG-Grid sends one or a few changed
+// cells per call). `data` only contains fields the admin actually changed.
 export async function updateMember(memberId, data) {
   if (!mongoose.Types.ObjectId.isValid(memberId)) throw new AppError(MESSAGES.MEMBERS.NOT_FOUND, 404);
 
-  const email = data.email.toLowerCase();
-  const isarMemberId = data.ISARMemberID;
+  const existingMember = await memberRepository.findMemberById(memberId);
+  if (!existingMember) throw new AppError(MESSAGES.MEMBERS.NOT_FOUND, 404);
 
-  const existing = await memberRepository.findConflictingMembers({
-    emails: [email],
-    isarMemberIds: [isarMemberId],
-    excludeId: memberId,
-  });
-  if (existing.length > 0) {
-    const emailTaken = existing.some(m => m.email?.toLowerCase() === email);
-    throw new AppError(
-      emailTaken ? MESSAGES.MEMBERS.EMAIL_ALREADY_EXISTS : MESSAGES.MEMBERS.ISAR_MEMBER_ID_ALREADY_EXISTS,
-      409,
-    );
+  // A field with a pending member-submitted edit request can't be overwritten
+  // here — otherwise a later approval would silently stomp this admin edit
+  // with the older proposed value. Admin must resolve the pending request first.
+  const lockedFieldsBeingEdited = Object.keys(data).filter(field => existingMember.lockedFields?.includes(field));
+  if (lockedFieldsBeingEdited.length > 0) {
+    throw new AppError(MESSAGES.MEMBERS.EDIT_FIELDS_LOCKED, 409, { fields: lockedFieldsBeingEdited });
+  }
+
+  if (data.email || data.ISARMemberID) {
+    const email = data.email ?? existingMember.email;
+    const isarMemberId = data.ISARMemberID ?? existingMember.ISARMemberID;
+
+    const existing = await memberRepository.findConflictingMembers({
+      emails: [email],
+      isarMemberIds: [isarMemberId],
+      excludeId: memberId,
+    });
+    if (existing.length > 0) {
+      const emailTaken = existing.some(m => m.email?.toLowerCase() === email);
+      throw new AppError(
+        emailTaken ? MESSAGES.MEMBERS.EMAIL_ALREADY_EXISTS : MESSAGES.MEMBERS.ISAR_MEMBER_ID_ALREADY_EXISTS,
+        409,
+      );
+    }
   }
 
   const member = await memberRepository.updateMemberById(memberId, data);
@@ -368,10 +384,47 @@ export async function listMembers({ skip, limit }) {
   return { members, totalCount };
 }
 
+// Attaches per-field pending-review detail (proposed value, previous value,
+// when it was submitted) to each member so callers can flag exactly which
+// fields are awaiting approval and show what was proposed.
+async function attachPendingChanges(members) {
+  const memberIds = members.map(m => m._id);
+  const pendingRequests = memberIds.length > 0
+    ? await memberEditRequestRepository.findPendingByMemberIds(memberIds)
+    : [];
+
+  const pendingChangesByMemberId = new Map();
+  for (const request of pendingRequests) {
+    const key = request.memberId.toString();
+    const bucket = pendingChangesByMemberId.get(key) ?? {};
+    for (const field of request.fields) {
+      bucket[field] = {
+        requestId:     request._id,
+        proposedValue: request.proposedChanges[field],
+        previousValue: request.previousValues[field],
+        submittedAt:   request.submittedAt,
+      };
+    }
+    pendingChangesByMemberId.set(key, bucket);
+  }
+
+  return members.map(member => ({
+    ...member,
+    pendingChanges: pendingChangesByMemberId.get(member._id.toString()) ?? {},
+  }));
+}
+
+// Same as listMembers, but flags which fields are pending review — see attachPendingChanges.
+export async function listMembersForAdmin({ skip, limit }) {
+  const { members, totalCount } = await listMembers({ skip, limit });
+  return { members: await attachPendingChanges(members), totalCount };
+}
+
 export async function getOwnProfile(email) {
   const member = await memberRepository.findMemberByEmail(email);
   if (!member) {
     throw new AppError(MESSAGES.MEMBERS.SESSION_MEMBER_NOT_FOUND, 401);
   }
-  return member;
+  const [withPendingChanges] = await attachPendingChanges([member]);
+  return withPendingChanges;
 }

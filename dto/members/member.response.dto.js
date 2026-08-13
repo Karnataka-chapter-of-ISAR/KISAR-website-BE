@@ -27,9 +27,19 @@ export function toAdminMemberResponseDto(member) {
     lat:                member.lat,
     lng:                member.lng,
     colorIndex:         member.colorIndex,
+    lockedFields:       member.lockedFields ?? [],
+    pendingChanges:     member.pendingChanges ?? {},
     createdAt:          member.createdAt,
     updatedAt:          member.updatedAt,
   };
+}
+
+// Self view only needs "here's the value you submitted", not the full audit
+// detail admins get — flatten { field: { proposedValue, ... } } to { field: proposedValue }.
+function toSimplePendingChanges(pendingChanges = {}) {
+  return Object.fromEntries(
+    Object.entries(pendingChanges).map(([field, detail]) => [field, detail.proposedValue]),
+  );
 }
 
 // Self profile view: a member fetching their own record, so all fields are safe to expose.
@@ -62,8 +72,9 @@ export function toSelfMemberResponseDto(member) {
     lat:                member.lat,
     lng:                member.lng,
     colorIndex:         member.colorIndex,
-    createdAt:          member.createdAt,
-    updatedAt:          member.updatedAt,
+    lockedFields:       member.lockedFields ?? [],
+    pendingChanges:     toSimplePendingChanges(member.pendingChanges),
+    rejectedChanges:    member.rejectedChanges ?? {},
   };
 }
 

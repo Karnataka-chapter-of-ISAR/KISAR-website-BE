@@ -1,5 +1,6 @@
-import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, getOwnProfile } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, listMembersForAdmin, getOwnProfile } from '../services/members.service.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
+import { validatePatchMemberRequest } from '../dto/members/patchMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
 import { toImportMembersResponseDto } from '../dto/members/importMembers.response.dto.js';
 import { toAdminMemberResponseDto, toPublicMemberResponseDto, toSelfMemberResponseDto } from '../dto/members/member.response.dto.js';
@@ -70,7 +71,7 @@ export async function createMemberController(req, res) {
 }
 
 export async function updateMemberController(req, res) {
-  const { valid, errors, data } = validateCreateMemberRequest(req.body);
+  const { valid, errors, data } = validatePatchMemberRequest(req.body);
   if (!valid) {
     return sendError(res, {
       message: MESSAGES.MEMBERS.VALIDATION_ERROR,
@@ -103,7 +104,7 @@ export async function exportMembersController(req, res) {
 
 export async function listMembersAdminController(req, res) {
   const { page, limit, skip } = parsePagination(req.query);
-  const { members, totalCount } = await listMembers({ skip, limit });
+  const { members, totalCount } = await listMembersForAdmin({ skip, limit });
 
   return sendSuccess(res, {
     message: MESSAGES.MEMBERS.FETCH_SUCCESS,
@@ -130,6 +131,7 @@ export async function listMembersController(req, res) {
 export async function getOwnProfileController(req, res) {
   try {
     const member = await getOwnProfile(req.user.email);
+
     return sendSuccess(res, {
       message: MESSAGES.MEMBERS.PROFILE_FETCH_SUCCESS,
       data: { member: toSelfMemberResponseDto(member) },

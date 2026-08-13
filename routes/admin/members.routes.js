@@ -7,7 +7,7 @@ const router = Router();
 
 router.get('/', authenticateAdmin, listMembersAdminController);
 router.post('/', authenticateAdmin, createMemberController);
-router.put('/:id', authenticateAdmin, updateMemberController);
+router.patch('/:id', authenticateAdmin, updateMemberController);
 router.get('/export', authenticateAdmin, exportMembersController);
 router.post('/import/validate', authenticateAdmin, uploadMembersSheet, validateMembersImportController);
 router.post('/import/:batchId/confirm', authenticateAdmin, confirmMembersImportController);

@@ -28,6 +28,9 @@ const memberSchema = new mongoose.Schema(
     lat:               { type: Number, default: null },
     lng:               { type: Number, default: null },
     colorIndex:        { type: Number, default: 0 },
+    // Field names currently awaiting admin review — see MemberEditRequest.
+    // Locked fields are disabled for further edits until approved/rejected.
+    lockedFields:      { type: [String], default: [] },
   },
   { timestamps: true },
 );

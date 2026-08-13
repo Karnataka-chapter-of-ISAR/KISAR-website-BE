@@ -50,6 +50,13 @@ export const MESSAGES = {
     VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
     EMAIL_ALREADY_EXISTS: 'A member with this email already exists.',
     ISAR_MEMBER_ID_ALREADY_EXISTS: 'A member with this ISAR member ID already exists.',
+    EDIT_REQUEST_SUBMITTED: 'Your changes have been submitted for review. The affected fields are locked until an admin approves or rejects them.',
+    PROFILE_UPDATE_SUCCESS: 'Your profile has been updated.',
+    EDIT_REQUEST_APPROVED: 'Edit request approved and applied to the member profile.',
+    EDIT_REQUEST_REJECTED: 'Edit request rejected.',
+    EDIT_REQUEST_NOT_FOUND: 'This edit request was not found or has already been resolved.',
+    EDIT_FIELDS_LOCKED: 'One or more of these fields already have a pending change awaiting approval.',
+    EDIT_NO_CHANGES: 'No changes were detected.',
   },
 
   EVENTS: {

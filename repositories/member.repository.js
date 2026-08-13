@@ -45,3 +45,30 @@ export function countMembers() {
 export function countDistinctDistricts() {
   return Member.distinct('district', { district: { $nin: [null, ''] } });
 }
+
+// Atomically locks `fields` on the member, but only if none of them are
+// already locked — prevents two concurrent edit submissions from both
+// succeeding on the same field. Returns null if any field was already locked.
+export function lockMemberFields({ memberId, fields, session }) {
+  return Member.findOneAndUpdate(
+    { _id: memberId, lockedFields: { $nin: fields } },
+    { $push: { lockedFields: { $each: fields } } },
+    { new: true, session },
+  ).lean();
+}
+
+export function applyApprovedChanges({ memberId, changes, fields, session }) {
+  return Member.findByIdAndUpdate(
+    memberId,
+    { $set: changes, $pull: { lockedFields: { $in: fields } } },
+    { new: true, runValidators: true, session },
+  ).lean();
+}
+
+export function unlockMemberFields({ memberId, fields, session }) {
+  return Member.findByIdAndUpdate(
+    memberId,
+    { $pull: { lockedFields: { $in: fields } } },
+    { new: true, session },
+  ).lean();
+}
