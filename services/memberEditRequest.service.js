@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
-import { getMemberFieldSection } from '../constants/members.js';
+import { getMemberFieldSection, MEMBER_EDIT_REQUEST_STATUS } from '../constants/members.js';
 import { getFieldMode } from '../utils/profileUtil.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as memberEditRequestRepository from '../repositories/memberEditRequest.repository.js';
@@ -91,8 +91,18 @@ export async function listOwnEditRequests(email) {
   return memberEditRequestRepository.findByMemberSorted(member._id);
 }
 
-export function listPendingEditRequests({ section } = {}) {
-  return memberEditRequestRepository.findPending({ section });
+export async function listEditRequests({ status, section, skip, limit } = {}) {
+  if (status && !MEMBER_EDIT_REQUEST_STATUS.includes(status)) {
+    throw new AppError(MESSAGES.MEMBERS.INVALID_EDIT_REQUEST_STATUS, 422);
+  }
+  const resolvedStatus = status || 'pending';
+
+  const [requests, totalCount] = await Promise.all([
+    memberEditRequestRepository.findEditRequests({ status: resolvedStatus, section, skip, limit }),
+    memberEditRequestRepository.countEditRequests({ status: resolvedStatus, section }),
+  ]);
+
+  return { requests, totalCount };
 }
 
 export async function approveEditRequest({ requestId, adminId }) {
@@ -129,6 +139,7 @@ export async function approveEditRequest({ requestId, adminId }) {
 
 export async function rejectEditRequest({ requestId, adminId, reason }) {
   if (!mongoose.Types.ObjectId.isValid(requestId)) throw new AppError(MESSAGES.MEMBERS.EDIT_REQUEST_NOT_FOUND, 404);
+  if (!reason || !reason.trim()) throw new AppError(MESSAGES.MEMBERS.REJECTION_REASON_REQUIRED, 422);
 
   const session = await mongoose.startSession();
   try {

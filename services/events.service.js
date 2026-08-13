@@ -52,6 +52,21 @@ export async function listEventsForMember(email) {
   }));
 }
 
+export async function getEventAttendees({ eventId, skip, limit }) {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
+
+  const event = await eventRepository.findEventById(eventId);
+  if (!event) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
+
+  const memberIds = event.registeredMembers;
+  const [members, totalCount] = await Promise.all([
+    memberIds.length > 0 ? memberRepository.findMembersByIdsPaginated({ ids: memberIds, skip, limit }) : [],
+    memberIds.length > 0 ? memberRepository.countMembersByIds(memberIds) : 0,
+  ]);
+
+  return { event, members, totalCount };
+}
+
 export async function registerForEvent({ eventId, email }) {
   if (!mongoose.Types.ObjectId.isValid(eventId)) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
 

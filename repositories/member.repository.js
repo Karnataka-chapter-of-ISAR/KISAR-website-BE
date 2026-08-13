@@ -46,6 +46,16 @@ export function countDistinctDistricts() {
   return Member.distinct('district', { district: { $nin: [null, ''] } });
 }
 
+export function findMembersByIdsPaginated({ ids, skip, limit }) {
+  return Member.find({ _id: { $in: ids } }).sort({ name: 1 }).skip(skip).limit(limit).lean();
+}
+
+// Separate from ids.length so orphaned refs (e.g. a deleted member left
+// behind in Event.registeredMembers) don't inflate the reported total.
+export function countMembersByIds(ids) {
+  return Member.countDocuments({ _id: { $in: ids } });
+}
+
 // Atomically locks `fields` on the member, but only if none of them are
 // already locked — prevents two concurrent edit submissions from both
 // succeeding on the same field. Returns null if any field was already locked.

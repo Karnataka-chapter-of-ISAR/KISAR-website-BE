@@ -57,6 +57,8 @@ export const MESSAGES = {
     EDIT_REQUEST_NOT_FOUND: 'This edit request was not found or has already been resolved.',
     EDIT_FIELDS_LOCKED: 'One or more of these fields already have a pending change awaiting approval.',
     EDIT_NO_CHANGES: 'No changes were detected.',
+    INVALID_EDIT_REQUEST_STATUS: 'Status must be one of: pending, approved, rejected.',
+    REJECTION_REASON_REQUIRED: 'A reason is required when rejecting an edit request.',
   },
 
   EVENTS: {
@@ -70,6 +72,7 @@ export const MESSAGES = {
     NOT_FOUND: 'Event not found.',
     ALREADY_REGISTERED: 'You are already registered for this event.',
     EVENT_FULL: 'This event has reached its capacity.',
+    ATTENDEES_FETCH_SUCCESS: 'Attendees fetched successfully.',
   },
 
   NEWS: {

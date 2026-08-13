@@ -1,9 +1,11 @@
 import { validateCreateEventRequest } from '../dto/events/createEvent.request.dto.js';
 import { validateUpdateEventRequest } from '../dto/events/updateEvent.request.dto.js';
 import { toEventResponseDto } from '../dto/events/event.response.dto.js';
-import { createEvent, updateEvent, deleteEvent, listEventsForMember, registerForEvent } from '../services/events.service.js';
+import { toEventAttendeeResponseDto } from '../dto/events/eventAttendee.response.dto.js';
+import { createEvent, updateEvent, deleteEvent, listEventsForMember, registerForEvent, getEventAttendees } from '../services/events.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 import { MESSAGES } from '../constants/messages.js';
 
 export async function createEventController(req, res) {
@@ -71,6 +73,32 @@ export async function getMyEventsController(req, res) {
     message: MESSAGES.EVENTS.FETCH_SUCCESS,
     data: { events: events.map(toEventResponseDto) },
   });
+}
+
+export async function getEventAttendeesController(req, res) {
+  const { page, limit, skip } = parsePagination(req.query);
+
+  try {
+    const { event, members, totalCount } = await getEventAttendees({ eventId: req.params.id, skip, limit });
+    return sendSuccess(res, {
+      message: MESSAGES.EVENTS.ATTENDEES_FETCH_SUCCESS,
+      data: {
+        event: {
+          id:              event._id,
+          title:           event.title,
+          capacity:        event.capacity,
+          registeredCount: event.registeredMembers.length,
+        },
+        attendees: members.map(toEventAttendeeResponseDto),
+        pagination: buildPaginationMeta({ page, limit, totalCount }),
+      },
+    });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
 }
 
 export async function registerForEventController(req, res) {

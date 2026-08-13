@@ -18,9 +18,15 @@ export function findPendingByMemberIds(memberIds) {
   return MemberEditRequest.find({ memberId: { $in: memberIds }, status: 'pending' }).lean();
 }
 
-export function findPending({ section } = {}) {
-  return MemberEditRequest.find({ status: 'pending', ...(section ? { section } : {}) })
+export function findEditRequests({ status, section, skip, limit }) {
+  return MemberEditRequest.find({ status, ...(section ? { section } : {}) })
     .sort({ submittedAt: 1 })
+    .skip(skip)
+    .limit(limit)
     .populate('memberId', 'name email memberId')
     .lean();
+}
+
+export function countEditRequests({ status, section }) {
+  return MemberEditRequest.countDocuments({ status, ...(section ? { section } : {}) });
 }
