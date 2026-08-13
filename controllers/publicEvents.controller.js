@@ -4,7 +4,7 @@ import { sendSuccess } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
 
 export async function getEventsController(req, res) {
-  const events = await listEvents();
+  const events = await listEvents(req.query.search);
 
   return sendSuccess(res, {
     message: MESSAGES.EVENTS.FETCH_SUCCESS,

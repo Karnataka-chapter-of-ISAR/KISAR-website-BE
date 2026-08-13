@@ -9,8 +9,8 @@ export async function createEvent({ data, bannerImage, createdBy }) {
   return eventRepository.createEvent({ ...data, bannerImage, createdBy });
 }
 
-export async function listEvents() {
-  return eventRepository.findAllEvents();
+export async function listEvents(search) {
+  return eventRepository.findAllEvents(search);
 }
 
 export async function updateEvent({ eventId, data, bannerImage }) {

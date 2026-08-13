@@ -35,3 +35,13 @@ export const ADMIN_EDITABLE_MEMBER_FIELDS = [
   'city', 'district', 'state', 'pincode', 'country', 'zone', 'chapter', 'linkedin',
   'joined', 'privacy', 'lat', 'lng', 'colorIndex',
 ];
+
+// Every string-valued Member field, searched together for the admin grid's
+// search box. Excludes lat/lng/colorIndex (internal, not identity/contact
+// data) — joined (year) is handled separately since it's numeric.
+export const MEMBER_SEARCHABLE_STRING_FIELDS = [
+  'memberId', 'ISARMemberID', 'name', 'title', 'membershipCategory', 'email',
+  'alternateEmail', 'phone', 'alternatePhone', 'designation', 'specialization',
+  'institution', 'address', 'city', 'district', 'state', 'pincode', 'country',
+  'zone', 'chapter', 'linkedin', 'privacy',
+];

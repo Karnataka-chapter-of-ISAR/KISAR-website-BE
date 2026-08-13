@@ -1,11 +1,39 @@
 import Event from '../models/Event.js';
+import { EVENT_SEARCHABLE_STRING_FIELDS } from '../constants/events.js';
+import { escapeRegex } from '../utils/regex.js';
+
+// Case-insensitive substring match across every searchable string field, plus
+// an exact match on `capacity` when the term is all digits, plus a same-day
+// match on `date` when the term parses as a date (e.g. "2026-08-14").
+function buildEventSearchFilter(search) {
+  if (!search || !search.trim()) return {};
+
+  const term = search.trim();
+  const pattern = new RegExp(escapeRegex(term), 'i');
+  const or = EVENT_SEARCHABLE_STRING_FIELDS.map(field => ({ [field]: pattern }));
+
+  if (/^\d+$/.test(term)) {
+    or.push({ capacity: Number(term) });
+  }
+
+  const parsedDate = new Date(term);
+  if (!isNaN(parsedDate.getTime())) {
+    const startOfDay = new Date(parsedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+    or.push({ date: { $gte: startOfDay, $lt: endOfDay } });
+  }
+
+  return { $or: or };
+}
 
 export function createEvent(data) {
   return Event.create(data);
 }
 
-export function findAllEvents() {
-  return Event.find().sort({ date: 1, time: 1 }).lean();
+export function findAllEvents(search) {
+  return Event.find(buildEventSearchFilter(search)).sort({ date: 1, time: 1 }).lean();
 }
 
 export function findHighlightedEvents(fromDate) {

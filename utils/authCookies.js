@@ -5,8 +5,8 @@ function cookieOpts(maxAge) {
   const isProd = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: true,
-    sameSite: isProd ? 'strict' : 'none',
+    secure: isProd,
+    sameSite: isProd ? 'strict' : 'lax',
     maxAge,
   };
 }

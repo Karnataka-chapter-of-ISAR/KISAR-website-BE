@@ -1,4 +1,24 @@
 import Member from '../models/Member.js';
+import { MEMBER_SEARCHABLE_STRING_FIELDS } from '../constants/members.js';
+import { escapeRegex } from '../utils/regex.js';
+
+// Case-insensitive substring match across every searchable string field,
+// plus an exact match on `joined` (year) when the term is all digits.
+// Regex is built from an escaped literal, so it can't cause ReDoS regardless
+// of what the admin types.
+function buildMemberSearchFilter(search) {
+  if (!search || !search.trim()) return {};
+
+  const term = search.trim();
+  const pattern = new RegExp(escapeRegex(term), 'i');
+  const or = MEMBER_SEARCHABLE_STRING_FIELDS.map(field => ({ [field]: pattern }));
+
+  if (/^\d+$/.test(term)) {
+    or.push({ joined: Number(term) });
+  }
+
+  return { $or: or };
+}
 
 export function findConflictingMembers({ emails, isarMemberIds, excludeId }) {
   return Member.find(
@@ -30,16 +50,16 @@ export function updateMemberById(id, data) {
   return Member.findByIdAndUpdate(id, data, { new: true, runValidators: true }).lean();
 }
 
-export function findMembersPaginated({ skip, limit }) {
-  return Member.find().sort({ name: 1 }).skip(skip).limit(limit).lean();
+export function findMembersPaginated({ skip, limit, search }) {
+  return Member.find(buildMemberSearchFilter(search)).sort({ name: 1 }).skip(skip).limit(limit).lean();
 }
 
 export function findAllMembersSorted() {
   return Member.find().sort({ name: 1 }).lean();
 }
 
-export function countMembers() {
-  return Member.countDocuments();
+export function countMembers(search) {
+  return Member.countDocuments(buildMemberSearchFilter(search));
 }
 
 export function countDistinctDistricts() {

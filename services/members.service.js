@@ -414,9 +414,14 @@ async function attachPendingChanges(members) {
   }));
 }
 
-// Same as listMembers, but flags which fields are pending review — see attachPendingChanges.
-export async function listMembersForAdmin({ skip, limit }) {
-  const { members, totalCount } = await listMembers({ skip, limit });
+// Same as listMembers, but flags which fields are pending review (see
+// attachPendingChanges) and supports `search` — a case-insensitive substring
+// match across every member field, admin-only (see MEMBER_SEARCHABLE_STRING_FIELDS).
+export async function listMembersForAdmin({ skip, limit, search }) {
+  const [members, totalCount] = await Promise.all([
+    memberRepository.findMembersPaginated({ skip, limit, search }),
+    memberRepository.countMembers(search),
+  ]);
   return { members: await attachPendingChanges(members), totalCount };
 }
 

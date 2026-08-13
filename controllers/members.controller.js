@@ -104,7 +104,7 @@ export async function exportMembersController(req, res) {
 
 export async function listMembersAdminController(req, res) {
   const { page, limit, skip } = parsePagination(req.query);
-  const { members, totalCount } = await listMembersForAdmin({ skip, limit });
+  const { members, totalCount } = await listMembersForAdmin({ skip, limit, search: req.query.search });
 
   return sendSuccess(res, {
     message: MESSAGES.MEMBERS.FETCH_SUCCESS,
