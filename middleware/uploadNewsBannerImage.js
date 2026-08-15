@@ -10,7 +10,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const NEWS_UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'news');
 fs.mkdirSync(NEWS_UPLOADS_DIR, { recursive: true });
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_ATTACHMENT_TYPES = ['application/pdf'];
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, NEWS_UPLOADS_DIR),
@@ -22,9 +23,18 @@ const storage = multer.diskStorage({
 
 export const uploadNewsBannerImage = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB cap
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB cap for banner + attachment
   fileFilter(_req, file, cb) {
-    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) return cb(null, true);
-    cb(new Error('Invalid file type. Please upload a JPEG, PNG, WEBP, or GIF image.'));
+    const allowedTypes = file.fieldname === 'attachment' ? ALLOWED_ATTACHMENT_TYPES : ALLOWED_IMAGE_TYPES;
+    if (allowedTypes.includes(file.mimetype)) return cb(null, true);
+
+    const message = file.fieldname === 'attachment'
+      ? 'Invalid file type. Please upload a PDF document.'
+      : 'Invalid file type. Please upload a JPEG, PNG, WEBP, or GIF image.';
+
+    cb(new Error(message));
   },
-}).single('bannerImage');
+}).fields([
+  { name: 'bannerImage', maxCount: 1 },
+  { name: 'attachment', maxCount: 1 },
+]);
