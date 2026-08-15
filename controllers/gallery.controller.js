@@ -1,6 +1,7 @@
 import { validateCreateGalleryRequest } from '../dto/gallery/createGallery.request.dto.js';
 import { toGalleryResponseDto } from '../dto/gallery/gallery.response.dto.js';
 import { createGalleryItem, listGalleryItems, updateGalleryItem, deleteGalleryItem } from '../services/gallery.service.js';
+import { findCategoriesBySection } from '../repositories/category.repository.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
@@ -15,7 +16,9 @@ export async function getAdminGalleryController(req, res) {
 }
 
 export async function createGalleryController(req, res) {
-  const { valid, errors, data } = validateCreateGalleryRequest(req.body);
+  const validCategories = await findCategoriesBySection('gallery');
+  const validCategorySlugs = new Set(validCategories.map(item => item.slug));
+  const { valid, errors, data } = validateCreateGalleryRequest(req.body, validCategorySlugs);
   if (!valid) {
     return sendError(res, {
       message: MESSAGES.GALLERY.VALIDATION_ERROR,
@@ -43,7 +46,9 @@ export async function createGalleryController(req, res) {
 }
 
 export async function updateGalleryController(req, res) {
-  const { valid, errors, data } = validateCreateGalleryRequest(req.body);
+  const validCategories = await findCategoriesBySection('gallery');
+  const validCategorySlugs = new Set(validCategories.map(item => item.slug));
+  const { valid, errors, data } = validateCreateGalleryRequest(req.body, validCategorySlugs);
   if (!valid) {
     return sendError(res, {
       message: MESSAGES.GALLERY.VALIDATION_ERROR,

@@ -16,12 +16,14 @@ import newsRoutes from './routes/news.routes.js';
 import adminNewsRoutes from './routes/admin/news.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import adminGalleryRoutes from './routes/admin/gallery.routes.js';
+import adminCategoriesRoutes from './routes/admin/categories.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
+import { ensureDefaultCategories } from './services/category.service.js';
 
 dotenv.config();
 
@@ -64,6 +66,7 @@ app.use(`${API_V1}/news`, newsRoutes);
 app.use(`${API_V1}/admin/news`, adminNewsRoutes);
 app.use(`${API_V1}/gallery`, galleryRoutes);
 app.use(`${API_V1}/admin/gallery`, adminGalleryRoutes);
+app.use(`${API_V1}/admin/categories`, adminCategoriesRoutes);
 app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
 app.use(`${API_V1}/kpi`, dashboardRoutes);
 
@@ -91,7 +94,11 @@ app.use((err, req, res, next) => {
 });
 
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => logger.info('MongoDB connected'))
+  .then(async () => {
+    logger.info('MongoDB connected');
+    await ensureDefaultCategories();
+    logger.info('Default categories ensured');
+  })
   .catch((err) => logger.error(`MongoDB connection error: ${err.message}`));
 
 mongoose.connection.on('error', (err) => {
