@@ -34,6 +34,19 @@ export async function deleteNewsBannerImage(bannerImagePath) {
   }
 }
 
+export async function deleteNewsAttachment(attachmentUrl) {
+  if (!attachmentUrl) return;
+
+  const filePath = path.join(NEWS_UPLOADS_DIR, path.basename(attachmentUrl));
+  try {
+    await fs.unlink(filePath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      logger.error(`[deleteNewsAttachment] Failed to delete ${filePath}: ${err.message}`);
+    }
+  }
+}
+
 export async function deleteGalleryImage(imagePath) {
   if (!imagePath) return;
 

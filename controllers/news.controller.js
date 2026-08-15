@@ -24,8 +24,20 @@ export async function createNewsController(req, res) {
     });
   }
 
-  const bannerImage = req.file ? `/uploads/news/${req.file.filename}` : null;
-  const news = await createNews({ data, bannerImage, createdBy: req.admin?.email ?? null });
+  const bannerImage = req.files?.bannerImage?.[0] ? `/uploads/news/${req.files.bannerImage[0].filename}` : null;
+  const attachmentFile = req.files?.attachment?.[0];
+  const attachmentTitle = data.attachmentTitle || (attachmentFile ? attachmentFile.originalname.replace(/\.[^.]+$/, '') : null);
+  const attachmentUrl = attachmentFile ? `/uploads/news/${attachmentFile.filename}` : null;
+  const attachmentCategory = data.attachmentCategory || data.category;
+
+  const news = await createNews({
+    data,
+    bannerImage,
+    attachmentTitle,
+    attachmentUrl,
+    attachmentCategory,
+    createdBy: req.admin?.email ?? null,
+  });
 
   return sendSuccess(res, {
     message: MESSAGES.NEWS.CREATE_SUCCESS,
@@ -44,10 +56,23 @@ export async function updateNewsController(req, res) {
     });
   }
 
-  const bannerImage = req.file ? `/uploads/news/${req.file.filename}` : null;
+  const bannerImage = req.files?.bannerImage?.[0] ? `/uploads/news/${req.files.bannerImage[0].filename}` : null;
+  const attachmentFile = req.files?.attachment?.[0];
+  const attachmentTitle = data.attachmentTitle || (attachmentFile ? attachmentFile.originalname.replace(/\.[^.]+$/, '') : undefined);
+  const attachmentUrl = attachmentFile ? `/uploads/news/${attachmentFile.filename}` : undefined;
+  const attachmentCategory = data.attachmentCategory || data.category;
+  const clearAttachment = req.body.clearAttachment === 'true' || req.body.clearAttachment === true;
 
   try {
-    const news = await updateNews({ newsId: req.params.id, data, bannerImage });
+    const news = await updateNews({
+      newsId: req.params.id,
+      data,
+      bannerImage,
+      attachmentTitle,
+      attachmentUrl,
+      attachmentCategory,
+      clearAttachment,
+    });
     return sendSuccess(res, {
       message: MESSAGES.NEWS.UPDATE_SUCCESS,
       data: { news: toNewsResponseDto(news) },
