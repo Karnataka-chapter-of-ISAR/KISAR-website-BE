@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import * as XLSX from 'xlsx';
 import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
 import { EMAIL_REGEX, PHONE_REGEX } from '../constants/members.js';
@@ -10,6 +9,7 @@ import * as memberEditRequestRepository from '../repositories/memberEditRequest.
 import * as counterRepository from '../repositories/counter.repository.js';
 import { formatMemberId } from '../utils/memberId.js';
 import { sendWelcomeEmail } from './notifications.service.js';
+import { runWorker } from '../utils/runWorker.js';
 
 const MEMBER_ID_COUNTER = 'memberId';
 
@@ -17,80 +17,10 @@ const BATCH_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 const REQUIRED_FIELDS = ['name', 'email', 'ISARMemberID'];
 
-// Maps normalised Excel header → schema field name. Covers both the plain
-// import template and the ISAR membership-registry export format.
-const HEADER_MAP = {
-  // plain template
-  name:              'name',
-  email:             'email',
-  designation:       'designation',
-  specialization:    'specialization',
-  institution:       'institution',
-  city:              'city',
-  district:          'district',
-  phone:             'phone',
-  linkedin:          'linkedin',
-  joined:            'joined',
-  privacy:           'privacy',
-  lat:               'lat',
-  lng:               'lng',
-  colorindex:        'colorIndex',
-
-  // ISAR membership-registry export
-  'new membership no':      'ISARMemberID',
-  doctor:                    'title',
-  'category of membership': 'membershipCategory',
-  'full name':               'name',
-  state:                     'state',
-  pin:                       'pincode',
-  'state chapter selected':  'chapter',
-  country:                   'country',
-  zone:                      'zone',
-  mobile1:                   'phone',
-  mobile2:                   'alternatePhone',
-  'email 1':                 'email',
-  'email 2':                 'alternateEmail',
-};
-
-const ADDRESS_HEADERS = new Set(['address 1', 'address 2', 'address 3']);
-const STRINGIFY_FIELDS = ['phone', 'alternatePhone', 'pincode', 'ISARMemberID'];
-
-function normalizeHeader(key) {
-  return key.replace(/\s+/g, ' ').trim().toLowerCase();
-}
-
-function parseSheet(buffer) {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheet    = workbook.Sheets[workbook.SheetNames[0]];
-  const rows     = XLSX.utils.sheet_to_json(sheet, { defval: null });
-
-  return rows.map(raw => {
-    const member = {};
-    const addressParts = [];
-
-    for (const [rawKey, value] of Object.entries(raw)) {
-      const key = normalizeHeader(rawKey);
-      const cleaned = value === '' ? null : value;
-
-      if (ADDRESS_HEADERS.has(key)) {
-        if (cleaned) addressParts.push(cleaned.toString().trim());
-        continue;
-      }
-
-      const mapped = HEADER_MAP[key];
-      if (mapped) member[mapped] = cleaned;
-    }
-
-    if (addressParts.length > 0) member.address = addressParts.join(', ');
-
-    // Excel yields numbers for phone-like/pin/membership-no columns; normalise to strings.
-    for (const field of STRINGIFY_FIELDS) {
-      if (member[field] != null) member[field] = member[field].toString().trim();
-    }
-
-    return member;
-  });
-}
+// XLSX parsing/building is synchronous and CPU-heavy — offloaded to worker
+// threads (see workers/) so it doesn't stall the event loop for other requests.
+const PARSE_WORKER_URL = new URL('../workers/xlsxParse.worker.js', import.meta.url);
+const EXPORT_WORKER_URL = new URL('../workers/xlsxExport.worker.js', import.meta.url);
 
 // Runs the per-row checks that don't require a DB round-trip, in priority
 // order. Returns { row, name, email, issue, type } for the first problem
@@ -116,7 +46,7 @@ function checkRowFormat(row, rowNumber) {
 export async function validateMembersSheet(buffer, adminId) {
   let rows;
   try {
-    rows = parseSheet(buffer);
+    rows = await runWorker(PARSE_WORKER_URL, { buffer });
   } catch {
     throw new AppError(MESSAGES.MEMBERS.PARSE_ERROR, 422);
   }
@@ -369,11 +299,7 @@ export async function exportMembersToExcel() {
     'Privacy':             m.privacy,
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
-
-  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  return runWorker(EXPORT_WORKER_URL, { rows });
 }
 
 export async function listMembers({ skip, limit }) {

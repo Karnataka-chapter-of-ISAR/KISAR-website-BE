@@ -1,6 +1,8 @@
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PHONE_REGEX = /^(?:\+91)?[6-9]\d{9}$/;
 export const MEMBER_PRIVACY_OPTIONS = ['public', 'limited', 'private'];
+// "YYYY-MM", zero-padded so lexicographic string comparison sorts chronologically.
+export const MONTH_YEAR_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 // Fields a member may submit for self-service edit, grouped by profile tab.
 // email/ISARMemberID/memberId are deliberately excluded — email is the login
@@ -9,7 +11,7 @@ export const MEMBER_EDIT_SECTION_FIELDS = {
   details: [
     'name', 'title', 'phone', 'alternatePhone', 'alternateEmail', 'designation',
     'specialization', 'institution', 'address', 'city', 'district', 'state',
-    'pincode', 'country', 'linkedin',
+    'pincode', 'country', 'linkedin', 'experience',
   ],
   membership: ['membershipCategory', 'zone', 'chapter', 'joined', 'privacy'],
 };

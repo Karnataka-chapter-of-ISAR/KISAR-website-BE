@@ -1,4 +1,5 @@
 import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -24,6 +25,9 @@ import logger from './utils/logger.js';
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FE_DIST_DIR = path.join(__dirname, 'dist');
+
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be set and at least 32 characters long');
 }
@@ -44,10 +48,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// health API
-app.get('/', (req, res) => sendSuccess(res, { message: MESSAGES.GENERAL.SERVER_OK }));
-
 const API_V1 = '/api/v1';
+
+// health API
+app.get(`${API_V1}/health`, (req, res) => sendSuccess(res, { message: MESSAGES.GENERAL.SERVER_OK }));
 
 app.use(`${API_V1}/auth`, authRoutes);
 
@@ -62,6 +66,15 @@ app.use(`${API_V1}/gallery`, galleryRoutes);
 app.use(`${API_V1}/admin/gallery`, adminGalleryRoutes);
 app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
 app.use(`${API_V1}/kpi`, dashboardRoutes);
+
+app.use(express.static(FE_DIST_DIR));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith(`${API_V1}/`) || req.path.startsWith('/uploads/')) {
+    return next();
+  }
+  res.sendFile(path.join(FE_DIST_DIR, 'index.html'));
+});
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {

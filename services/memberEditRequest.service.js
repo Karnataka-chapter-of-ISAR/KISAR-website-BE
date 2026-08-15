@@ -6,6 +6,13 @@ import { getFieldMode } from '../utils/profileUtil.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as memberEditRequestRepository from '../repositories/memberEditRequest.repository.js';
 
+// Arrays (e.g. experience) are new objects on every submission even when
+// logically unchanged, so plain === would never treat them as a no-op.
+function isSameValue(a, b) {
+  if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  return a === b;
+}
+
 // A submission can mix direct-edit fields (e.g. district, linkedin) with
 // approval-required ones (e.g. phone, address) in the same request — see
 // utils/profileUtil.js for which is which. Direct fields are written to the
@@ -23,7 +30,7 @@ export async function submitEditRequest({ email, changes }) {
   const previousValuesBySection = {};
   for (const [field, newValue] of Object.entries(changes)) {
     const oldValue = member[field] ?? null;
-    if (newValue === oldValue) continue; // no-op, skip entirely
+    if (isSameValue(newValue, oldValue)) continue; // no-op, skip entirely
 
     if (getFieldMode(field) === 'direct') {
       directChanges[field] = newValue;

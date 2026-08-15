@@ -1,4 +1,4 @@
-import { EMAIL_REGEX, PHONE_REGEX, MEMBER_PRIVACY_OPTIONS, MEMBER_EDIT_FIELDS } from '../../constants/members.js';
+import { EMAIL_REGEX, PHONE_REGEX, MEMBER_PRIVACY_OPTIONS, MEMBER_EDIT_FIELDS, MONTH_YEAR_REGEX } from '../../constants/members.js';
 import { getFieldMode } from '../../utils/profileUtil.js';
 
 // Validates a member's self-service profile edit submission. This is a
@@ -41,6 +41,36 @@ export function validateMemberEditRequest(body = {}) {
     errors.push(`Privacy must be one of: ${MEMBER_PRIVACY_OPTIONS.join(', ')}.`);
   }
 
+  if (Object.prototype.hasOwnProperty.call(body, 'experience')) {
+    if (!Array.isArray(body.experience)) {
+      errors.push('Experience must be a list of entries.');
+    } else {
+      body.experience.forEach((entry, index) => {
+        if (!entry || typeof entry !== 'object') {
+          errors.push(`Experience entry ${index + 1} is invalid.`);
+          return;
+        }
+        if (!entry.title || !entry.title.toString().trim()) {
+          errors.push(`Experience entry ${index + 1}: title is required.`);
+        }
+        if (!entry.instituteName || !entry.instituteName.toString().trim()) {
+          errors.push(`Experience entry ${index + 1}: institute name is required.`);
+        }
+        const from = entry.from?.toString().trim();
+        if (!from || !MONTH_YEAR_REGEX.test(from)) {
+          errors.push(`Experience entry ${index + 1}: from must be in YYYY-MM format.`);
+        }
+        const to = entry.to ? entry.to.toString().trim() : null;
+        if (to && !MONTH_YEAR_REGEX.test(to)) {
+          errors.push(`Experience entry ${index + 1}: to must be in YYYY-MM format.`);
+        }
+        if (from && to && MONTH_YEAR_REGEX.test(from) && MONTH_YEAR_REGEX.test(to) && to < from) {
+          errors.push(`Experience entry ${index + 1}: to cannot be before from.`);
+        }
+      });
+    }
+  }
+
   if (errors.length > 0) return { valid: false, errors };
 
   const changes = {};
@@ -49,6 +79,15 @@ export function validateMemberEditRequest(body = {}) {
     const value = body[field];
     if (field === 'joined') {
       changes[field] = value !== undefined && value !== null && value !== '' ? Number(value) : null;
+    } else if (field === 'experience') {
+      changes[field] = Array.isArray(value)
+        ? value.map(entry => ({
+          title: entry.title.toString().trim(),
+          instituteName: entry.instituteName.toString().trim(),
+          from: entry.from.toString().trim(),
+          to: entry.to ? entry.to.toString().trim() : null,
+        }))
+        : [];
     } else if (typeof value === 'string') {
       changes[field] = value.trim() || null;
     } else {

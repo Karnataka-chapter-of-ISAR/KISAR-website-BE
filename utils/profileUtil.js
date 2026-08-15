@@ -3,6 +3,7 @@ export const APPROVAL_REQUIRED_FIELDS = ['phone', 'address', 'name', 'membership
 export const DIRECT_EDIT_FIELDS = [
   'district',
   'linkedin',
+  'experience',
 ];
 
 // Never editable at all — no edit affordance, no approval flow, always just displays
