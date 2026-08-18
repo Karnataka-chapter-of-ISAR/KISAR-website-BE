@@ -1,7 +1,7 @@
 import { validateMemberEditRequest } from '../dto/members/memberEditRequest.request.dto.js';
 import { toSelfEditRequestResponseDto, toAdminEditRequestResponseDto } from '../dto/members/memberEditRequest.response.dto.js';
 import { toSelfMemberResponseDto } from '../dto/members/member.response.dto.js';
-import { submitEditRequest, listOwnEditRequests, listEditRequests, approveEditRequest, rejectEditRequest } from '../services/memberEditRequest.service.js';
+import { submitEditRequest, listOwnEditRequests, listEditRequests, approveEditRequest, rejectEditRequest, getMemberNotifications, getAdminNotifications } from '../services/memberEditRequest.service.js';
 import { getOwnProfile } from '../services/members.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -64,6 +64,37 @@ export async function listEditRequestsAdminController(req, res) {
         editRequests: requests.map(toAdminEditRequestResponseDto),
         pagination: buildPaginationMeta({ page, limit, totalCount }),
       },
+    });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
+}
+
+export async function listOwnNotificationsController(req, res) {
+  try {
+    const notifications = await getMemberNotifications({ email: req.user.email, limit: Number(req.query.limit || 20) });
+    return sendSuccess(res, {
+      message: 'Notifications fetched successfully',
+      data: { notifications },
+    });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
+}
+
+export async function listAdminNotificationsController(req, res) {
+  try {
+    const limit = Number(req.query.limit || 10);
+    const notifications = await getAdminNotifications({ status: req.query.status, limit });
+    return sendSuccess(res, {
+      message: 'Notifications fetched successfully',
+      data: { notifications },
     });
   } catch (err) {
     if (err instanceof AppError) {
