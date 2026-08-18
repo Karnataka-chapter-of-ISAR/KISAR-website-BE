@@ -171,3 +171,114 @@ export async function rejectEditRequest({ requestId, adminId, reason }) {
     await session.endSession();
   }
 }
+
+function toNotificationSummary(request) {
+  const fieldList = request.fields ?? [];
+  const fieldsLabel = fieldList.length ? fieldList.join(', ') : 'profile';
+
+  switch (request.status) {
+    case 'pending':
+      return {
+        title: 'Profile update pending',
+        message: `Your update to ${fieldsLabel} is waiting for admin review.`,
+      };
+    case 'approved':
+      return {
+        title: 'Profile update approved',
+        message: `Your update to ${fieldsLabel} was approved by the admin.`,
+      };
+    case 'rejected':
+      return {
+        title: 'Profile update rejected',
+        message: request.rejectionReason
+          ? `Your update to ${fieldsLabel} was rejected: ${request.rejectionReason}.`
+          : `Your update to ${fieldsLabel} was rejected.`,
+      };
+    default:
+      return {
+        title: 'Profile update',
+        message: `Your update to ${fieldsLabel} has an updated status.`,
+      };
+  }
+}
+
+function toAdminNotificationSummary(request) {
+  const member = request.memberId ?? {};
+  const memberName = member.name || 'A member';
+  const fieldList = request.fields ?? [];
+  const fieldsLabel = fieldList.length ? fieldList.join(', ') : 'profile';
+
+  switch (request.status) {
+    case 'pending':
+      return {
+        title: 'New profile update request',
+        message: `${memberName} submitted a change to ${fieldsLabel}.`,
+      };
+    case 'approved':
+      return {
+        title: 'Profile update approved',
+        message: `${memberName}'s update to ${fieldsLabel} was approved.`,
+      };
+    case 'rejected':
+      return {
+        title: 'Profile update rejected',
+        message: `${memberName}'s update to ${fieldsLabel} was rejected.`,
+      };
+    default:
+      return {
+        title: 'Profile update activity',
+        message: `${memberName} has a new profile update event.`,
+      };
+  }
+}
+
+export async function getMemberNotifications({ email, limit = 20 } = {}) {
+  const member = await memberRepository.findMemberByEmail(email);
+  if (!member) return [];
+
+  const requests = await memberEditRequestRepository.findRecentByMember(member._id, limit);
+  return requests.map(request => {
+    const summary = toNotificationSummary(request);
+    return {
+      id: request._id.toString(),
+      title: summary.title,
+      message: summary.message,
+      type: 'profile_update',
+      status: request.status,
+      section: request.section,
+      fields: request.fields ?? [],
+      submittedAt: request.submittedAt,
+      reviewedAt: request.reviewedAt,
+      reviewedBy: request.reviewedBy ?? null,
+      rejectionReason: request.rejectionReason ?? null,
+    };
+  });
+}
+
+export async function getAdminNotifications({ status, limit = 10 } = {}) {
+  const requests = await memberEditRequestRepository.findRecentForAdmin({ status, limit });
+  return requests.map(request => {
+    const summary = toAdminNotificationSummary(request);
+    return {
+      id: request._id.toString(),
+      title: summary.title,
+      message: summary.message,
+      type: 'profile_update',
+      status: request.status,
+      section: request.section,
+      fields: request.fields ?? [],
+      member: request.memberId
+        ? {
+            id: request.memberId._id?.toString?.() ?? request.memberId.toString(),
+            name: request.memberId.name ?? null,
+            email: request.memberId.email ?? null,
+            memberId: request.memberId.memberId ?? null,
+          }
+        : null,
+      submittedAt: request.submittedAt,
+      reviewedAt: request.reviewedAt,
+      reviewedBy: request.reviewedBy ?? null,
+      rejectionReason: request.rejectionReason ?? null,
+    };
+  });
+}
