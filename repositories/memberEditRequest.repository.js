@@ -18,6 +18,19 @@ export function findPendingByMemberIds(memberIds) {
   return MemberEditRequest.find({ memberId: { $in: memberIds }, status: 'pending' }).lean();
 }
 
+export function findRecentByMember(memberId, limit = 20) {
+  return MemberEditRequest.find({ memberId }).sort({ submittedAt: -1 }).limit(limit).lean();
+}
+
+export function findRecentForAdmin({ status, limit = 10 } = {}) {
+  const query = status ? { status } : {};
+  return MemberEditRequest.find(query)
+    .sort({ submittedAt: -1 })
+    .limit(limit)
+    .populate('memberId', 'name email memberId')
+    .lean();
+}
+
 export function findEditRequests({ status, section, skip, limit }) {
   return MemberEditRequest.find({ status, ...(section ? { section } : {}) })
     .sort({ submittedAt: 1 })
