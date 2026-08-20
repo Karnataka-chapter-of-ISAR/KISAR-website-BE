@@ -1,0 +1,3 @@
+/api/v1/*  https://kisar-be.onrender.com/api/v1/:splat  200
+/uploads/*  https://kisar-be.onrender.com/uploads/:splat  200
+/* /index.html 200
