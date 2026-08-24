@@ -1,3 +1,3 @@
-export function toAuthResponseDto({ email }) {
-  return { email };
+export function toAuthResponseDto({ email, role }) {
+  return { email, role };
 }

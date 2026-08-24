@@ -47,6 +47,7 @@ function toSimplePendingChanges(pendingChanges = {}) {
 export function toSelfMemberResponseDto(member) {
   return {
     id:                 member._id,
+    role:               'member',
     memberId:           member.memberId,
     ISARMemberID:       member.ISARMemberID,
     name:               member.name,

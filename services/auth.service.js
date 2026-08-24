@@ -16,8 +16,17 @@ const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEV_EMAIL = 'test@gmail.com';
 const DEV_OTP   = '948260';
 
-async function issueTokenPair(email) {
-  const accessToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_JWT_TTL });
+const MEMBER_ROLE = 'member';
+const ADMIN_ROLE = 'admin';
+
+// test@gmail.com is a dev-only login bypass (see DEV_EMAIL/DEV_OTP above); we
+// treat it as the admin account so the admin UI can be exercised without Netlify Identity.
+function resolveRole(email) {
+  return process.env.NODE_ENV !== 'production' && email === DEV_EMAIL ? ADMIN_ROLE : MEMBER_ROLE;
+}
+
+async function issueTokenPair(email, role) {
+  const accessToken = jwt.sign({ email, role }, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_JWT_TTL });
   const refreshToken = crypto.randomBytes(64).toString('hex');
 
   await refreshTokenRepository.deleteRefreshTokensForEmail(email);
@@ -51,9 +60,11 @@ export async function requestOtp(email) {
 
 export async function verifyOtp(email, otp) {
   if (process.env.NODE_ENV !== 'production' && email === DEV_EMAIL && otp === DEV_OTP) {
-    const tokens = await issueTokenPair(email);
-    return { email, ...tokens };
+    const tokens = await issueTokenPair(email, ADMIN_ROLE);
+    return { email, role: ADMIN_ROLE, ...tokens };
   }
+
+  const role = resolveRole(email);
 
   const record = await otpRepository.findActiveOtpByEmail(email);
   if (!record) throw new AppError(MESSAGES.OTP.INVALID_OR_EXPIRED, 400);
@@ -76,8 +87,8 @@ export async function verifyOtp(email, otp) {
   record.used = true;
   await record.save();
 
-  const tokens = await issueTokenPair(email);
-  return { email, ...tokens };
+  const tokens = await issueTokenPair(email, role);
+  return { email, role, ...tokens };
 }
 
 export async function refreshSession(rawRefreshToken) {
@@ -94,8 +105,9 @@ export async function refreshSession(rawRefreshToken) {
   const { email } = record;
   await record.deleteOne();
 
-  const tokens = await issueTokenPair(email);
-  return { email, ...tokens };
+  const role = resolveRole(email);
+  const tokens = await issueTokenPair(email, role);
+  return { email, role, ...tokens };
 }
 
 export async function logout({ token, user, refreshToken }) {

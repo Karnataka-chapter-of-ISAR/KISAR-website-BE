@@ -27,9 +27,9 @@ export async function verifyOtpController(req, res) {
   if (!valid) return sendError(res, { message: MESSAGES.OTP.INVALID_OR_EXPIRED, statusCode: 400 });
 
   try {
-    const { email, accessToken, refreshToken } = await verifyOtp(data.email, data.otp);
+    const { email, role, accessToken, refreshToken } = await verifyOtp(data.email, data.otp);
     setAuthCookies(res, { accessToken, refreshToken });
-    return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS, data: toAuthResponseDto({ email }) });
+    return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS, data: toAuthResponseDto({ email, role }) });
   } catch (err) {
     if (err instanceof AppError) {
       return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
