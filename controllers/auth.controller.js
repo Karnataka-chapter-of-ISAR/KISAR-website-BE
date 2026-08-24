@@ -28,7 +28,7 @@ export async function verifyOtpController(req, res) {
 
   try {
     const { email, role, accessToken, refreshToken } = await verifyOtp(data.email, data.otp);
-    setAuthCookies(res, { accessToken, refreshToken });
+    setAuthCookies(res, { accessToken, refreshToken, role });
     return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS, data: toAuthResponseDto({ email, role }) });
   } catch (err) {
     if (err instanceof AppError) {
@@ -40,8 +40,8 @@ export async function verifyOtpController(req, res) {
 
 export async function refreshAccessTokenController(req, res) {
   try {
-    const { accessToken, refreshToken } = await refreshSession(req.cookies.refresh_token);
-    setAuthCookies(res, { accessToken, refreshToken });
+    const { role, accessToken, refreshToken } = await refreshSession(req.cookies.refresh_token);
+    setAuthCookies(res, { accessToken, refreshToken, role });
     return sendSuccess(res, { message: MESSAGES.TOKEN.REFRESHED });
   } catch (err) {
     if (err instanceof AppError) {
