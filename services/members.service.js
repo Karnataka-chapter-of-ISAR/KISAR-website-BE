@@ -310,6 +310,26 @@ export async function listMembers({ skip, limit }) {
   return { members, totalCount };
 }
 
+// Always returns a district -> member count breakdown, optionally narrowed
+// by speciality and/or district. `speciality` is the public-facing name for
+// the `specialization` field.
+export async function getMemberCountsByDistrict({ speciality, district } = {}) {
+  const counts = await memberRepository.countMembersGroupedByDistrict({ specialization: speciality, district });
+  return counts.reduce((acc, { _id, count }) => {
+    acc[_id] = count;
+    return acc;
+  }, {});
+}
+
+// The member list itself, optionally narrowed by speciality and/or district.
+export async function filterMembers({ skip, limit, speciality, district }) {
+  const [members, totalCount] = await Promise.all([
+    memberRepository.findMembersByCategory({ skip, limit, specialization: speciality, district }),
+    memberRepository.countMembersByCategory({ specialization: speciality, district }),
+  ]);
+  return { members, totalCount };
+}
+
 // Attaches per-field pending-review detail (proposed value, previous value,
 // when it was submitted) to each member so callers can flag exactly which
 // fields are awaiting approval and show what was proposed.

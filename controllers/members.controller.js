@@ -1,4 +1,4 @@
-import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, listMembersForAdmin, getOwnProfile } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByDistrict, filterMembers, getOwnProfile } from '../services/members.service.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { validatePatchMemberRequest } from '../dto/members/patchMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
@@ -124,6 +124,30 @@ export async function listMembersController(req, res) {
     data: {
       members: members.map(toPublicMemberResponseDto),
       pagination: buildPaginationMeta({ page, limit, totalCount }),
+    },
+  });
+}
+
+// GET /api/v1/members/filter?speciality=&district=
+// Always returns both: the (paginated) matching member list, and a
+// district -> count breakdown of those same matches — narrowed by whichever
+// of speciality/district was given. With both given, the breakdown collapses
+// to a single district entry.
+export async function filterMembersController(req, res) {
+  const { speciality, district } = req.query;
+  const { page, limit, skip } = parsePagination(req.query);
+
+  const [districts, { members, totalCount }] = await Promise.all([
+    getMemberCountsByDistrict({ speciality, district }),
+    filterMembers({ skip, limit, speciality, district }),
+  ]);
+
+  return sendSuccess(res, {
+    message: MESSAGES.MEMBERS.FETCH_SUCCESS,
+    data: {
+      members: members.map(toPublicMemberResponseDto),
+      pagination: buildPaginationMeta({ page, limit, totalCount }),
+      districts,
     },
   });
 }
