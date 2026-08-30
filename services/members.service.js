@@ -310,22 +310,22 @@ export async function listMembers({ skip, limit }) {
   return { members, totalCount };
 }
 
-// Always returns a district -> member count breakdown, optionally narrowed
-// by speciality and/or district. `speciality` is the public-facing name for
-// the `specialization` field.
-export async function getMemberCountsByDistrict({ speciality, district } = {}) {
-  const counts = await memberRepository.countMembersGroupedByDistrict({ specialization: speciality, district });
+// Always returns a city -> member count breakdown, optionally narrowed by
+// speciality and/or city. `speciality` is the public-facing name for the
+// `specialization` field.
+export async function getMemberCountsByCity({ speciality, city } = {}) {
+  const counts = await memberRepository.countMembersGroupedByCity({ specialization: speciality, city });
   return counts.reduce((acc, { _id, count }) => {
     acc[_id] = count;
     return acc;
   }, {});
 }
 
-// The member list itself, optionally narrowed by speciality and/or district.
-export async function filterMembers({ skip, limit, speciality, district }) {
+// The member list itself, optionally narrowed by speciality and/or city.
+export async function filterMembers({ skip, limit, speciality, city }) {
   const [members, totalCount] = await Promise.all([
-    memberRepository.findMembersByCategory({ skip, limit, specialization: speciality, district }),
-    memberRepository.countMembersByCategory({ specialization: speciality, district }),
+    memberRepository.findMembersByCategory({ skip, limit, specialization: speciality, city }),
+    memberRepository.countMembersByCategory({ specialization: speciality, city }),
   ]);
   return { members, totalCount };
 }

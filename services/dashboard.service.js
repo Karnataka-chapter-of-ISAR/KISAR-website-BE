@@ -32,10 +32,10 @@ export async function getDashboardOverview({ email } = {}) {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  const [totalUsers, events, districts, member] = await Promise.all([
+  const [totalUsers, events, citiesCovered, member] = await Promise.all([
     memberRepository.countMembers(),
     eventRepository.findHighlightedEvents(startOfToday),
-    memberRepository.countDistinctDistricts(),
+    memberRepository.countDistinctCities(),
     email ? memberRepository.findMemberByEmail(email.toLowerCase()) : null,
   ]);
 
@@ -50,7 +50,7 @@ export async function getDashboardOverview({ email } = {}) {
     totalUsers,
     events: eventsWithRegistration,
     eventsCount: events.length,
-    districtsCovered: districts.length,
+    citiesCovered,
     yearsActive: getYearsActive(),
   };
 }

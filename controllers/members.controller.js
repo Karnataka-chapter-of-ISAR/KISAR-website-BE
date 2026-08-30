@@ -1,4 +1,4 @@
-import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByDistrict, filterMembers, getOwnProfile } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByCity, filterMembers, getOwnProfile } from '../services/members.service.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { validatePatchMemberRequest } from '../dto/members/patchMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
@@ -128,18 +128,18 @@ export async function listMembersController(req, res) {
   });
 }
 
-// GET /api/v1/members/filter?speciality=&district=
+// GET /api/v1/members/filter?speciality=&city=
 // Always returns both: the (paginated) matching member list, and a
-// district -> count breakdown of those same matches — narrowed by whichever
-// of speciality/district was given. With both given, the breakdown collapses
-// to a single district entry.
+// city -> count breakdown of those same matches — narrowed by whichever
+// of speciality/city was given. With both given, the breakdown collapses
+// to a single city entry.
 export async function filterMembersController(req, res) {
-  const { speciality, district } = req.query;
+  const { speciality, city } = req.query;
   const { page, limit, skip } = parsePagination(req.query);
 
-  const [districts, { members, totalCount }] = await Promise.all([
-    getMemberCountsByDistrict({ speciality, district }),
-    filterMembers({ skip, limit, speciality, district }),
+  const [cities, { members, totalCount }] = await Promise.all([
+    getMemberCountsByCity({ speciality, city }),
+    filterMembers({ skip, limit, speciality, city }),
   ]);
 
   return sendSuccess(res, {
@@ -147,7 +147,7 @@ export async function filterMembersController(req, res) {
     data: {
       members: members.map(toPublicMemberResponseDto),
       pagination: buildPaginationMeta({ page, limit, totalCount }),
-      districts,
+      cities,
     },
   });
 }
