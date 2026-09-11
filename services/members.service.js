@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import ExcelJS from 'exceljs';
 import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
 import { EMAIL_REGEX, PHONE_REGEX } from '../constants/members.js';
@@ -20,7 +21,6 @@ const REQUIRED_FIELDS = ['name', 'email', 'ISARMemberID'];
 // XLSX parsing/building is synchronous and CPU-heavy — offloaded to worker
 // threads (see workers/) so it doesn't stall the event loop for other requests.
 const PARSE_WORKER_URL = new URL('../workers/xlsxParse.worker.js', import.meta.url);
-const EXPORT_WORKER_URL = new URL('../workers/xlsxExport.worker.js', import.meta.url);
 
 // Runs the per-row checks that don't require a DB round-trip, in priority
 // order. Returns { row, name, email, issue, type } for the first problem
@@ -195,13 +195,25 @@ export async function confirmMembersImport(batchId) {
     throw new AppError(MESSAGES.MEMBERS.BATCH_CONFLICT_ON_CONFIRM, 409, { errors });
   }
 
-  const startSeq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, rows.length);
-  rows.forEach((row, idx) => {
-    row.memberId = formatMemberId(startSeq + idx);
-  });
+  // Reserving the memberId range, inserting the members, and clearing the
+  // pending batch must all succeed or fail together — otherwise a crash
+  // mid-flow either burns a memberId range with nothing inserted, or leaves
+  // the batch re-confirmable after members were already created from it.
+  const session = await mongoose.startSession();
+  let inserted;
+  try {
+    await session.withTransaction(async () => {
+      const startSeq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, rows.length, session);
+      rows.forEach((row, idx) => {
+        row.memberId = formatMemberId(startSeq + idx);
+      });
 
-  const inserted = await memberRepository.insertMembers(rows);
-  await pendingMemberImportRepository.deleteBatch(batchId);
+      inserted = await memberRepository.insertMembers(rows, session);
+      await pendingMemberImportRepository.deleteBatch(batchId, session);
+    });
+  } finally {
+    await session.endSession();
+  }
 
   await Promise.allSettled(inserted.map(member => sendWelcomeEmail(member)));
 
@@ -221,8 +233,20 @@ export async function createMember(data) {
     );
   }
 
-  const seq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, 1);
-  const member = await memberRepository.createMember({ ...data, memberId: formatMemberId(seq) });
+  // Reserving the memberId and creating the member must succeed or fail
+  // together — otherwise a crash in between permanently burns that memberId
+  // with no member ever created for it.
+  const session = await mongoose.startSession();
+  let member;
+  try {
+    await session.withTransaction(async () => {
+      const seq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, 1, session);
+      member = await memberRepository.createMember({ ...data, memberId: formatMemberId(seq) }, session);
+    });
+  } finally {
+    await session.endSession();
+  }
+
   await sendWelcomeEmail(member);
 
   return member;
@@ -268,38 +292,49 @@ export async function updateMember(memberId, data) {
   return member;
 }
 
-// Exports every member as an .xlsx workbook buffer, using the same field set/order
-// exposed to admins in the members table (see member.response.dto.js).
-export async function exportMembersToExcel() {
-  const members = await memberRepository.findAllMembersSorted();
+const MEMBER_EXPORT_COLUMNS = [
+  { header: 'Member ID',           key: 'memberId' },
+  { header: 'ISAR Member ID',      key: 'ISARMemberID' },
+  { header: 'Name',                key: 'name' },
+  { header: 'Title',               key: 'title' },
+  { header: 'Membership Category', key: 'membershipCategory' },
+  { header: 'Email',               key: 'email' },
+  { header: 'Alternate Email',     key: 'alternateEmail' },
+  { header: 'Phone',               key: 'phone' },
+  { header: 'Alternate Phone',     key: 'alternatePhone' },
+  { header: 'Designation',         key: 'designation' },
+  { header: 'Specialization',      key: 'specialization' },
+  { header: 'Institution',         key: 'institution' },
+  { header: 'Address',             key: 'address' },
+  { header: 'City',                key: 'city' },
+  { header: 'District',            key: 'district' },
+  { header: 'State',               key: 'state' },
+  { header: 'Pincode',             key: 'pincode' },
+  { header: 'Country',             key: 'country' },
+  { header: 'Zone',                key: 'zone' },
+  { header: 'Chapter',             key: 'chapter' },
+  { header: 'LinkedIn',            key: 'linkedin' },
+  { header: 'Joined',              key: 'joined' },
+  { header: 'Privacy',             key: 'privacy' },
+];
 
-  const rows = members.map(m => ({
-    'Member ID':           m.memberId,
-    'ISAR Member ID':      m.ISARMemberID,
-    'Name':                m.name,
-    'Title':               m.title,
-    'Membership Category': m.membershipCategory,
-    'Email':                m.email,
-    'Alternate Email':     m.alternateEmail,
-    'Phone':               m.phone,
-    'Alternate Phone':     m.alternatePhone,
-    'Designation':         m.designation,
-    'Specialization':      m.specialization,
-    'Institution':         m.institution,
-    'Address':             m.address,
-    'City':                m.city,
-    'District':            m.district,
-    'State':               m.state,
-    'Pincode':             m.pincode,
-    'Country':             m.country,
-    'Zone':                m.zone,
-    'Chapter':             m.chapter,
-    'LinkedIn':            m.linkedin,
-    'Joined':              m.joined,
-    'Privacy':             m.privacy,
-  }));
+// Streams every member straight into an .xlsx workbook written directly to
+// `res`, one row at a time via a DB cursor — the whole collection is never
+// held in memory as an array or as a fully-built workbook buffer, so this
+// scales with member count instead of spiking memory on large exports.
+// Field set/order matches what's exposed to admins in the members table
+// (see member.response.dto.js).
+export async function streamMembersToExcel(res) {
+  const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res, useStyles: false, useSharedStrings: false });
+  const worksheet = workbook.addWorksheet('Members');
+  worksheet.columns = MEMBER_EXPORT_COLUMNS;
 
-  return runWorker(EXPORT_WORKER_URL, { rows });
+  for await (const member of memberRepository.getMembersCursor()) {
+    worksheet.addRow(member).commit();
+  }
+
+  worksheet.commit();
+  await workbook.commit();
 }
 
 export async function listMembers({ skip, limit }) {
@@ -319,6 +354,10 @@ export async function getMemberCountsByCity({ speciality, city } = {}) {
     acc[_id] = count;
     return acc;
   }, {});
+}
+
+export async function getSpecializations() {
+  return memberRepository.findDistinctSpecializations();
 }
 
 // The member list itself, optionally narrowed by speciality and/or city.

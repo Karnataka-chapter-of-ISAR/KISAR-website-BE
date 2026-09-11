@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { hashToken } from '../utils/tokenHash.js';
 import { AppError } from '../utils/AppError.js';
 import { sendEmail } from '../utils/mailer.js';
@@ -25,16 +26,26 @@ function resolveRole(email) {
   return process.env.NODE_ENV !== 'production' && email === DEV_EMAIL ? ADMIN_ROLE : MEMBER_ROLE;
 }
 
+// Dropping the old refresh token(s) and issuing the new one must succeed or
+// fail together — otherwise a crash between the two leaves the caller with
+// an access token but no matching refresh token to renew it with later.
 async function issueTokenPair(email, role) {
   const accessToken = jwt.sign({ email, role }, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_JWT_TTL });
   const refreshToken = crypto.randomBytes(64).toString('hex');
 
-  await refreshTokenRepository.deleteRefreshTokensForEmail(email);
-  await refreshTokenRepository.createRefreshToken({
-    email,
-    tokenHash: hashToken(refreshToken),
-    expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-  });
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await refreshTokenRepository.deleteRefreshTokensForEmail(email, session);
+      await refreshTokenRepository.createRefreshToken({
+        email,
+        tokenHash: hashToken(refreshToken),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      }, session);
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return { accessToken, refreshToken };
 }

@@ -8,6 +8,6 @@ export function findActiveBatch(batchId) {
   return PendingMemberImport.findOne({ batchId, expiresAt: { $gt: new Date() } }).lean();
 }
 
-export function deleteBatch(batchId) {
-  return PendingMemberImport.deleteOne({ batchId });
+export function deleteBatch(batchId, session) {
+  return PendingMemberImport.deleteOne({ batchId }, { session });
 }

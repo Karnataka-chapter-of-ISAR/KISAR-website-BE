@@ -1,11 +1,12 @@
 import RefreshToken from '../models/RefreshToken.js';
 
-export function deleteRefreshTokensForEmail(email) {
-  return RefreshToken.deleteMany({ email });
+export function deleteRefreshTokensForEmail(email, session) {
+  return RefreshToken.deleteMany({ email }, { session });
 }
 
-export function createRefreshToken(data) {
-  return RefreshToken.create(data);
+export async function createRefreshToken(data, session) {
+  const [record] = await RefreshToken.create([data], { session });
+  return record;
 }
 
 export function findRefreshTokenByHash(tokenHash) {

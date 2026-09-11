@@ -3,13 +3,14 @@ import { createEventController, updateEventController, deleteEventController, ge
 import { getEventsController } from '../../controllers/publicEvents.controller.js';
 import { uploadBannerImage } from '../../middleware/uploadBannerImage.js';
 import { authenticateAdmin } from '../../middleware/authenticateAdmin.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 
 const router = Router();
 
-router.get('/', authenticateAdmin, getEventsController);
-router.post('/', authenticateAdmin, uploadBannerImage, createEventController);
-router.patch('/:id', authenticateAdmin, uploadBannerImage, updateEventController);
-router.delete('/:id', authenticateAdmin, deleteEventController);
-router.get('/:id/attendees', authenticateAdmin, getEventAttendeesController);
+router.get('/', authenticateAdmin, asyncHandler(getEventsController));
+router.post('/', authenticateAdmin, uploadBannerImage, asyncHandler(createEventController));
+router.patch('/:id', authenticateAdmin, uploadBannerImage, asyncHandler(updateEventController));
+router.delete('/:id', authenticateAdmin, asyncHandler(deleteEventController));
+router.get('/:id/attendees', authenticateAdmin, asyncHandler(getEventAttendeesController));
 
 export default router;

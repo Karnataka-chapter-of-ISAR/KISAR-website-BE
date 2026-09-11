@@ -5,11 +5,12 @@ import {
   getCategoriesController,
 } from '../../controllers/category.controller.js';
 import { authenticateAdmin } from '../../middleware/authenticateAdmin.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 
 const router = Router();
 
-router.get('/', authenticateAdmin, getCategoriesController);
-router.post('/', authenticateAdmin, createCategoryController);
-router.delete('/:id', authenticateAdmin, deleteCategoryController);
+router.get('/', authenticateAdmin, asyncHandler(getCategoriesController));
+router.post('/', authenticateAdmin, asyncHandler(createCategoryController));
+router.delete('/:id', authenticateAdmin, asyncHandler(deleteCategoryController));
 
 export default router;

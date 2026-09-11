@@ -60,6 +60,7 @@ export const MESSAGES = {
     INVALID_EDIT_REQUEST_STATUS: 'Status must be one of: pending, approved, rejected.',
     REJECTION_REASON_REQUIRED: 'A reason is required when rejecting an edit request.',
     EXPORT_IMPORT_RATE_LIMITED: 'Too many export/import requests. Please wait a while before trying again.',
+    SPECIALIZATIONS_FETCH_SUCCESS: 'Specializations fetched successfully.',
   },
 
   EVENTS: {

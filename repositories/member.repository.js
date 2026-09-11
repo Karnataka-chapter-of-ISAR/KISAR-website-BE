@@ -38,12 +38,13 @@ export function findMemberById(id) {
   return Member.findById(id).lean();
 }
 
-export function insertMembers(rows) {
-  return Member.insertMany(rows);
+export function insertMembers(rows, session) {
+  return Member.insertMany(rows, { session });
 }
 
-export function createMember(data) {
-  return Member.create(data);
+export async function createMember(data, session) {
+  const [member] = await Member.create([data], { session });
+  return member;
 }
 
 export function updateMemberById(id, data) {
@@ -54,8 +55,10 @@ export function findMembersPaginated({ skip, limit, search }) {
   return Member.find(buildMemberSearchFilter(search)).sort({ name: 1 }).skip(skip).limit(limit).lean();
 }
 
-export function findAllMembersSorted() {
-  return Member.find().sort({ name: 1 }).lean();
+// Cursor instead of an array — the export flow streams members out one at a
+// time instead of loading the whole collection into memory.
+export function getMembersCursor() {
+  return Member.find().sort({ name: 1 }).lean().cursor();
 }
 
 export function countMembers(search) {
@@ -67,6 +70,13 @@ export function countMembers(search) {
 export async function countDistinctCities() {
   const cities = await Member.distinct('city', { city: { $nin: [null, ''] } });
   return new Set(cities.map(city => city.trim().toUpperCase())).size;
+}
+
+// Distinct specialization values, case/whitespace-normalized so entries that
+// differ only in casing or padding aren't returned as separate values.
+export async function findDistinctSpecializations() {
+  const specializations = await Member.distinct('specialization', { specialization: { $nin: [null, ''] } });
+  return [...new Set(specializations.map(s => s.trim()))].sort((a, b) => a.localeCompare(b));
 }
 
 // Case-insensitive exact match — unlike buildMemberSearchFilter's substring

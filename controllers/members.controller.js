@@ -1,4 +1,4 @@
-import { validateMembersSheet, confirmMembersImport, createMember, updateMember, exportMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByCity, filterMembers, getOwnProfile } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, updateMember, streamMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByCity, filterMembers, getOwnProfile, getSpecializations } from '../services/members.service.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { validatePatchMemberRequest } from '../dto/members/patchMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
@@ -95,11 +95,9 @@ export async function updateMemberController(req, res) {
 }
 
 export async function exportMembersController(req, res) {
-  const buffer = await exportMembersToExcel();
-
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename="members.xlsx"');
-  return res.send(buffer);
+  await streamMembersToExcel(res);
 }
 
 export async function listMembersAdminController(req, res) {
@@ -149,6 +147,18 @@ export async function filterMembersController(req, res) {
       pagination: buildPaginationMeta({ page, limit, totalCount }),
       cities,
     },
+  });
+}
+
+// GET /api/v1/members/specializations (public) and
+// GET /api/v1/admin/members/specializations (admin) — both return the same
+// sorted list of distinct specialization values on file.
+export async function listSpecializationsController(req, res) {
+  const specializations = await getSpecializations();
+
+  return sendSuccess(res, {
+    message: MESSAGES.MEMBERS.SPECIALIZATIONS_FETCH_SUCCESS,
+    data: { specializations },
   });
 }
 

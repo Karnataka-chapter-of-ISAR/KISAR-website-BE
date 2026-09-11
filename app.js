@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import multer from 'multer';
@@ -24,6 +25,7 @@ import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
 import { ensureDefaultCategories } from './services/category.service.js';
+import { AppError } from './utils/AppError.js';
 
 dotenv.config();
 
@@ -36,6 +38,42 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 app.set('trust proxy', 1);
+
+// CSP is tuned for what the SPA in dist/ actually loads: Google Fonts
+// (fonts.googleapis.com/gstatic.com) and the Google Maps JS SDK
+// (maps.googleapis.com/gstatic.com) used by the Member Map page. 'unsafe-inline'
+// on styleSrc is required because the app sets inline style={{...}} for
+// per-theme CSS variables and Google Maps' own injected styles — there's no
+// practical nonce/hash story for those. crossOriginEmbedderPolicy uses
+// 'credentialless' rather than the 'require-corp' default: Google Fonts/Maps
+// and other third-party assets don't send back Cross-Origin-Resource-Policy
+// headers, so 'require-corp' would block them outright; 'credentialless'
+// still isolates the page (strips credentials on cross-origin subrequests)
+// without requiring every third party to opt in. crossOriginResourcePolicy
+// stays relaxed to cross-origin because /uploads (banner/gallery/news images)
+// is served from this origin but consumed by the separately-hosted FEs
+// (kisar.netlify.app, kisar-admin.netlify.app) — the default same-origin
+// policy would silently break those images.
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://maps.googleapis.com', 'https://maps.gstatic.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleapis.com', 'https://*.gstatic.com', 'https://*.ggpht.com'],
+      connectSrc: ["'self'", 'https://maps.googleapis.com'],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: { policy: 'credentialless' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
@@ -80,6 +118,15 @@ app.get('*', (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
+  // A streaming response (e.g. the members export) can fail after headers
+  // are already flushed — nothing left to do but log and let Express's
+  // default handler close the connection, since a JSON error body can no
+  // longer be sent.
+  if (res.headersSent) {
+    logger.error(`Error after headers sent: ${err.stack || err.message}`);
+    return next(err);
+  }
+
   if (err instanceof multer.MulterError) {
     const message = err.code === 'LIMIT_FILE_SIZE' ? MESSAGES.UPLOAD.FILE_TOO_LARGE : MESSAGES.UPLOAD.UPLOAD_ERROR;
     return sendError(res, { message, statusCode: 400 });
@@ -89,8 +136,25 @@ app.use((err, req, res, next) => {
     return sendError(res, { message: err.message, statusCode: 400 });
   }
 
+  if (err instanceof AppError) {
+    return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+  }
+
   logger.error(`Unhandled error: ${err.stack || err.message}`);
   return sendError(res, { message: MESSAGES.GENERAL.INTERNAL_ERROR, statusCode: 500 });
+});
+
+// Last-resort safety net: with every route handler wrapped in asyncHandler,
+// rejections/throws inside a request should always reach the error middleware
+// above instead of here. These log anything that still slips through outside
+// a request context (e.g. a background task) so it's visible instead of
+// silently crashing the process.
+process.on('unhandledRejection', (reason) => {
+  logger.error(`Unhandled promise rejection: ${reason?.stack || reason}`);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error(`Uncaught exception: ${err.stack || err.message}`);
 });
 
 mongoose.connect(process.env.MONGODB_URI)
