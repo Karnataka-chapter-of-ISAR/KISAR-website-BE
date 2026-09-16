@@ -1,23 +1,22 @@
 import Member from '../models/Member.js';
-import { MEMBER_SEARCHABLE_STRING_FIELDS } from '../constants/members.js';
+import { MEMBER_SEARCHABLE_STRING_FIELDS, MEMBER_SEARCH_INDEX_NAME } from '../constants/members.js';
 import { escapeRegex } from '../utils/regex.js';
 
-// Case-insensitive substring match across every searchable string field,
-// plus an exact match on `joined` (year) when the term is all digits.
-// Regex is built from an escaped literal, so it can't cause ReDoS regardless
-// of what the admin types.
-function buildMemberSearchFilter(search) {
-  if (!search || !search.trim()) return {};
-
-  const term = search.trim();
-  const pattern = new RegExp(escapeRegex(term), 'i');
-  const or = MEMBER_SEARCHABLE_STRING_FIELDS.map(field => ({ [field]: pattern }));
+// Atlas Search compound query: autocomplete (nGram) match across every
+// searchable field, plus an exact match on `joined` (year) when the term is
+// all digits. Requires the `members_search` index — see
+// constants/members.js MEMBER_SEARCH_INDEX_DEFINITION and
+// scripts/createMemberSearchIndex.js.
+function buildMemberSearchStage(term) {
+  const should = [
+    { autocomplete: { query: term, path: MEMBER_SEARCHABLE_STRING_FIELDS } },
+  ];
 
   if (/^\d+$/.test(term)) {
-    or.push({ joined: Number(term) });
+    should.push({ equals: { path: 'joined', value: Number(term) } });
   }
 
-  return { $or: or };
+  return { $search: { index: MEMBER_SEARCH_INDEX_NAME, compound: { should, minimumShouldMatch: 1 } } };
 }
 
 export function findConflictingMembers({ emails, isarMemberIds, excludeId }) {
@@ -51,8 +50,8 @@ export function updateMemberById(id, data) {
   return Member.findByIdAndUpdate(id, data, { new: true, runValidators: true }).lean();
 }
 
-export function findMembersPaginated({ skip, limit, search }) {
-  return Member.find(buildMemberSearchFilter(search)).sort({ name: 1 }).skip(skip).limit(limit).lean();
+export function findMembersPaginated({ skip, limit }) {
+  return Member.find().sort({ name: 1 }).skip(skip).limit(limit).lean();
 }
 
 // Cursor instead of an array — the export flow streams members out one at a
@@ -61,8 +60,35 @@ export function getMembersCursor() {
   return Member.find().sort({ name: 1 }).lean().cursor();
 }
 
-export function countMembers(search) {
-  return Member.countDocuments(buildMemberSearchFilter(search));
+export function countMembers() {
+  return Member.countDocuments();
+}
+
+// Admin directory search — Atlas Search when a term is given (see
+// buildMemberSearchStage), otherwise the same plain paginated list/count
+// used everywhere else. Combines the page of results and the total count
+// into one aggregation via $facet instead of two separate queries.
+export async function searchMembersForAdmin({ skip, limit, search }) {
+  const term = search?.trim();
+  if (!term) {
+    const [members, totalCount] = await Promise.all([
+      findMembersPaginated({ skip, limit }),
+      countMembers(),
+    ]);
+    return { members, totalCount };
+  }
+
+  const [result = {}] = await Member.aggregate([
+    buildMemberSearchStage(term),
+    {
+      $facet: {
+        data: [{ $sort: { name: 1 } }, { $skip: skip }, { $limit: limit }],
+        totalCount: [{ $count: 'count' }],
+      },
+    },
+  ]);
+
+  return { members: result.data ?? [], totalCount: result.totalCount?.[0]?.count ?? 0 };
 }
 
 // Distinct city count, case/whitespace-normalized so "Bengaluru" and
@@ -72,46 +98,39 @@ export async function countDistinctCities() {
   return new Set(cities.map(city => city.trim().toUpperCase())).size;
 }
 
-// Distinct specialization values, case/whitespace-normalized so entries that
-// differ only in casing or padding aren't returned as separate values.
-export async function findDistinctSpecializations() {
-  const specializations = await Member.distinct('specialization', { specialization: { $nin: [null, ''] } });
-  return [...new Set(specializations.map(s => s.trim()))].sort((a, b) => a.localeCompare(b));
-}
-
-// Case-insensitive exact match — unlike buildMemberSearchFilter's substring
-// search, these are discrete category values so a partial match would be
+// Case-insensitive exact match — unlike the directory search's substring
+// match, these are discrete category values so a partial match would be
 // misleading (e.g. "Bengaluru" shouldn't also match "Bengaluru Rural").
 // `city` always requires a real value (whether pinned to a specific one or
 // just non-empty) — this endpoint excludes members with no city on file
 // from every scenario: list, count, and the grouped breakdown alike.
-function buildMemberCategoryFilter({ specialization, city }) {
+function buildMemberCategoryFilter({ membershipCategory, city }) {
   const filter = {
     city: (city && city.trim())
       ? new RegExp(`^${escapeRegex(city.trim())}$`, 'i')
       : { $nin: [null, ''] },
   };
-  if (specialization && specialization.trim()) {
-    filter.specialization = new RegExp(`^${escapeRegex(specialization.trim())}$`, 'i');
+  if (membershipCategory && membershipCategory.trim()) {
+    filter.membershipCategory = new RegExp(`^${escapeRegex(membershipCategory.trim())}$`, 'i');
   }
   return filter;
 }
 
-export function findMembersByCategory({ skip, limit, specialization, city }) {
-  return Member.find(buildMemberCategoryFilter({ specialization, city })).sort({ name: 1 }).skip(skip).limit(limit).lean();
+export function findMembersByCategory({ skip, limit, membershipCategory, city }) {
+  return Member.find(buildMemberCategoryFilter({ membershipCategory, city })).sort({ name: 1 }).skip(skip).limit(limit).lean();
 }
 
-export function countMembersByCategory({ specialization, city }) {
-  return Member.countDocuments(buildMemberCategoryFilter({ specialization, city }));
+export function countMembersByCategory({ membershipCategory, city }) {
+  return Member.countDocuments(buildMemberCategoryFilter({ membershipCategory, city }));
 }
 
 // Groups by a case/whitespace-normalized city so "Bengaluru" and "BENGALURU"
 // merge into one entry instead of fragmenting the counts (spelling variants
 // like "BANGALORE" are a separate, real-world naming difference and are
 // deliberately left as their own entry rather than guessed-merged).
-export function countMembersGroupedByCity({ specialization, city } = {}) {
+export function countMembersGroupedByCity({ membershipCategory, city } = {}) {
   return Member.aggregate([
-    { $match: buildMemberCategoryFilter({ specialization, city }) },
+    { $match: buildMemberCategoryFilter({ membershipCategory, city }) },
     { $group: { _id: { $toUpper: { $trim: { input: '$city' } } }, count: { $sum: 1 } } },
     { $sort: { _id: 1 } },
   ]);

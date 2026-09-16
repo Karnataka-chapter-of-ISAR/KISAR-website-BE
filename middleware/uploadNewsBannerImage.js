@@ -1,28 +1,10 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import multer from 'multer';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// NOTE: local disk storage is temporary for dev/demo purposes — Render's free tier
-// wipes this on every redeploy/restart. Swap for Cloudflare R2 (or similar) before prod.
-export const NEWS_UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'news');
-fs.mkdirSync(NEWS_UPLOADS_DIR, { recursive: true });
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const ALLOWED_ATTACHMENT_TYPES = ['application/pdf'];
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, NEWS_UPLOADS_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
-});
-
 export const uploadNewsBannerImage = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB cap for banner + attachment
   fileFilter(_req, file, cb) {
     const allowedTypes = file.fieldname === 'attachment' ? ALLOWED_ATTACHMENT_TYPES : ALLOWED_IMAGE_TYPES;

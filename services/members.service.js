@@ -302,8 +302,6 @@ const MEMBER_EXPORT_COLUMNS = [
   { header: 'Alternate Email',     key: 'alternateEmail' },
   { header: 'Phone',               key: 'phone' },
   { header: 'Alternate Phone',     key: 'alternatePhone' },
-  { header: 'Designation',         key: 'designation' },
-  { header: 'Specialization',      key: 'specialization' },
   { header: 'Institution',         key: 'institution' },
   { header: 'Address',             key: 'address' },
   { header: 'City',                key: 'city' },
@@ -346,25 +344,20 @@ export async function listMembers({ skip, limit }) {
 }
 
 // Always returns a city -> member count breakdown, optionally narrowed by
-// speciality and/or city. `speciality` is the public-facing name for the
-// `specialization` field.
-export async function getMemberCountsByCity({ speciality, city } = {}) {
-  const counts = await memberRepository.countMembersGroupedByCity({ specialization: speciality, city });
+// membership category and/or city.
+export async function getMemberCountsByCity({ membershipCategory, city } = {}) {
+  const counts = await memberRepository.countMembersGroupedByCity({ membershipCategory, city });
   return counts.reduce((acc, { _id, count }) => {
     acc[_id] = count;
     return acc;
   }, {});
 }
 
-export async function getSpecializations() {
-  return memberRepository.findDistinctSpecializations();
-}
-
-// The member list itself, optionally narrowed by speciality and/or city.
-export async function filterMembers({ skip, limit, speciality, city }) {
+// The member list itself, optionally narrowed by membership category and/or city.
+export async function filterMembers({ skip, limit, membershipCategory, city }) {
   const [members, totalCount] = await Promise.all([
-    memberRepository.findMembersByCategory({ skip, limit, specialization: speciality, city }),
-    memberRepository.countMembersByCategory({ specialization: speciality, city }),
+    memberRepository.findMembersByCategory({ skip, limit, membershipCategory, city }),
+    memberRepository.countMembersByCategory({ membershipCategory, city }),
   ]);
   return { members, totalCount };
 }
@@ -400,13 +393,11 @@ async function attachPendingChanges(members) {
 }
 
 // Same as listMembers, but flags which fields are pending review (see
-// attachPendingChanges) and supports `search` — a case-insensitive substring
-// match across every member field, admin-only (see MEMBER_SEARCHABLE_STRING_FIELDS).
+// attachPendingChanges) and supports `search` — an Atlas Search match across
+// every member field, admin-only (see MEMBER_SEARCHABLE_STRING_FIELDS and
+// memberRepository.searchMembersForAdmin).
 export async function listMembersForAdmin({ skip, limit, search }) {
-  const [members, totalCount] = await Promise.all([
-    memberRepository.findMembersPaginated({ skip, limit, search }),
-    memberRepository.countMembers(search),
-  ]);
+  const { members, totalCount } = await memberRepository.searchMembersForAdmin({ skip, limit, search });
   return { members: await attachPendingChanges(members), totalCount };
 }
 

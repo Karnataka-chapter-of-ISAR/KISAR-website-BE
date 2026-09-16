@@ -1,4 +1,4 @@
-import { validateMembersSheet, confirmMembersImport, createMember, updateMember, streamMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByCity, filterMembers, getOwnProfile, getSpecializations } from '../services/members.service.js';
+import { validateMembersSheet, confirmMembersImport, createMember, updateMember, streamMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByCity, filterMembers, getOwnProfile } from '../services/members.service.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { validatePatchMemberRequest } from '../dto/members/patchMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
@@ -126,18 +126,18 @@ export async function listMembersController(req, res) {
   });
 }
 
-// GET /api/v1/members/filter?speciality=&city=
+// GET /api/v1/members/filter?membershipCategory=&city=
 // Always returns both: the (paginated) matching member list, and a
 // city -> count breakdown of those same matches — narrowed by whichever
-// of speciality/city was given. With both given, the breakdown collapses
-// to a single city entry.
+// of membershipCategory/city was given. With both given, the breakdown
+// collapses to a single city entry.
 export async function filterMembersController(req, res) {
-  const { speciality, city } = req.query;
+  const { membershipCategory, city } = req.query;
   const { page, limit, skip } = parsePagination(req.query);
 
   const [cities, { members, totalCount }] = await Promise.all([
-    getMemberCountsByCity({ speciality, city }),
-    filterMembers({ skip, limit, speciality, city }),
+    getMemberCountsByCity({ membershipCategory, city }),
+    filterMembers({ skip, limit, membershipCategory, city }),
   ]);
 
   return sendSuccess(res, {
@@ -147,18 +147,6 @@ export async function filterMembersController(req, res) {
       pagination: buildPaginationMeta({ page, limit, totalCount }),
       cities,
     },
-  });
-}
-
-// GET /api/v1/members/specializations (public) and
-// GET /api/v1/admin/members/specializations (admin) — both return the same
-// sorted list of distinct specialization values on file.
-export async function listSpecializationsController(req, res) {
-  const specializations = await getSpecializations();
-
-  return sendSuccess(res, {
-    message: MESSAGES.MEMBERS.SPECIALIZATIONS_FETCH_SUCCESS,
-    data: { specializations },
   });
 }
 

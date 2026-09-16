@@ -4,6 +4,7 @@ import { createNews, listNews, updateNews, deleteNews } from '../services/news.s
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
+import { uploadBufferToS3, generateObjectKey } from '../utils/s3.js';
 
 export async function getAdminNewsController(req, res) {
   const news = await listNews();
@@ -24,10 +25,19 @@ export async function createNewsController(req, res) {
     });
   }
 
-  const bannerImage = req.files?.bannerImage?.[0] ? `/uploads/news/${req.files.bannerImage[0].filename}` : null;
+  const bannerImageFile = req.files?.bannerImage?.[0];
   const attachmentFile = req.files?.attachment?.[0];
+
+  const [bannerImage, attachmentUrl] = await Promise.all([
+    bannerImageFile
+      ? uploadBufferToS3({ buffer: bannerImageFile.buffer, mimetype: bannerImageFile.mimetype, key: generateObjectKey('news', bannerImageFile.originalname) })
+      : null,
+    attachmentFile
+      ? uploadBufferToS3({ buffer: attachmentFile.buffer, mimetype: attachmentFile.mimetype, key: generateObjectKey('news', attachmentFile.originalname) })
+      : null,
+  ]);
+
   const attachmentTitle = data.attachmentTitle || (attachmentFile ? attachmentFile.originalname.replace(/\.[^.]+$/, '') : null);
-  const attachmentUrl = attachmentFile ? `/uploads/news/${attachmentFile.filename}` : null;
   const attachmentCategory = data.attachmentCategory || data.category;
 
   const news = await createNews({
@@ -56,10 +66,19 @@ export async function updateNewsController(req, res) {
     });
   }
 
-  const bannerImage = req.files?.bannerImage?.[0] ? `/uploads/news/${req.files.bannerImage[0].filename}` : null;
+  const bannerImageFile = req.files?.bannerImage?.[0];
   const attachmentFile = req.files?.attachment?.[0];
+
+  const [bannerImage, attachmentUrl] = await Promise.all([
+    bannerImageFile
+      ? uploadBufferToS3({ buffer: bannerImageFile.buffer, mimetype: bannerImageFile.mimetype, key: generateObjectKey('news', bannerImageFile.originalname) })
+      : null,
+    attachmentFile
+      ? uploadBufferToS3({ buffer: attachmentFile.buffer, mimetype: attachmentFile.mimetype, key: generateObjectKey('news', attachmentFile.originalname) })
+      : undefined,
+  ]);
+
   const attachmentTitle = data.attachmentTitle || (attachmentFile ? attachmentFile.originalname.replace(/\.[^.]+$/, '') : undefined);
-  const attachmentUrl = attachmentFile ? `/uploads/news/${attachmentFile.filename}` : undefined;
   const attachmentCategory = data.attachmentCategory || data.category;
   const clearAttachment = req.body.clearAttachment === 'true' || req.body.clearAttachment === true;
 

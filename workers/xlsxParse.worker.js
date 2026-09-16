@@ -7,8 +7,6 @@ const HEADER_MAP = {
   // plain template
   name:              'name',
   email:             'email',
-  designation:       'designation',
-  specialization:    'specialization',
   institution:       'institution',
   city:              'city',
   district:          'district',

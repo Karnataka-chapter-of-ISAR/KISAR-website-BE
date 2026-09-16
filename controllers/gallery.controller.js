@@ -5,6 +5,7 @@ import { findCategoriesBySection } from '../repositories/category.repository.js'
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
+import { uploadBufferToS3, generateObjectKey } from '../utils/s3.js';
 
 export async function getAdminGalleryController(req, res) {
   const items = await listGalleryItems();
@@ -35,7 +36,7 @@ export async function createGalleryController(req, res) {
     });
   }
 
-  const image = `/uploads/gallery/${req.file.filename}`;
+  const image = await uploadBufferToS3({ buffer: req.file.buffer, mimetype: req.file.mimetype, key: generateObjectKey('gallery', req.file.originalname) });
   const item = await createGalleryItem({ data, image, createdBy: req.admin?.email ?? null });
 
   return sendSuccess(res, {
@@ -57,7 +58,9 @@ export async function updateGalleryController(req, res) {
     });
   }
 
-  const image = req.file ? `/uploads/gallery/${req.file.filename}` : null;
+  const image = req.file
+    ? await uploadBufferToS3({ buffer: req.file.buffer, mimetype: req.file.mimetype, key: generateObjectKey('gallery', req.file.originalname) })
+    : null;
 
   try {
     const item = await updateGalleryItem({ galleryId: req.params.id, data, image });

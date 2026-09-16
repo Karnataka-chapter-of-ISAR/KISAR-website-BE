@@ -1,8 +1,8 @@
 import { EMAIL_REGEX, PHONE_REGEX, MEMBER_PRIVACY_OPTIONS } from '../../constants/members.js';
 
 const OPTIONAL_STRING_FIELDS = [
-  'title', 'membershipCategory', 'alternateEmail', 'alternatePhone', 'designation',
-  'specialization', 'institution', 'address', 'city', 'district', 'state',
+  'title', 'membershipCategory', 'alternateEmail', 'alternatePhone',
+  'institution', 'address', 'city', 'district', 'state',
   'pincode', 'country', 'zone', 'chapter', 'linkedin',
 ];
 

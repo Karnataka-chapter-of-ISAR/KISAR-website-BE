@@ -23,8 +23,6 @@ const memberSchema = new mongoose.Schema(
     alternateEmail:    { type: String, trim: true, lowercase: true, default: null },
     phone:             { type: String, trim: true, default: null },
     alternatePhone:    { type: String, trim: true, default: null },
-    designation:       { type: String, trim: true, default: null },
-    specialization:    { type: String, trim: true, default: null },
     institution:       { type: String, trim: true, default: null },
     address:           { type: String, trim: true, default: null },
     city:              { type: String, trim: true, default: null },

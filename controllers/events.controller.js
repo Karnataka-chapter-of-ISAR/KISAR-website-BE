@@ -7,6 +7,7 @@ import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 import { MESSAGES } from '../constants/messages.js';
+import { uploadBufferToS3, generateObjectKey } from '../utils/s3.js';
 
 export async function createEventController(req, res) {
   const { valid, errors, data } = validateCreateEventRequest(req.body);
@@ -18,7 +19,9 @@ export async function createEventController(req, res) {
     });
   }
 
-  const bannerImage = req.file ? `/uploads/events/${req.file.filename}` : null;
+  const bannerImage = req.file
+    ? await uploadBufferToS3({ buffer: req.file.buffer, mimetype: req.file.mimetype, key: generateObjectKey('events', req.file.originalname) })
+    : null;
   const event = await createEvent({ data, bannerImage, createdBy: req.admin?.email ?? null });
 
   return sendSuccess(res, {
@@ -38,7 +41,9 @@ export async function updateEventController(req, res) {
     });
   }
 
-  const bannerImage = req.file ? `/uploads/events/${req.file.filename}` : null;
+  const bannerImage = req.file
+    ? await uploadBufferToS3({ buffer: req.file.buffer, mimetype: req.file.mimetype, key: generateObjectKey('events', req.file.originalname) })
+    : null;
 
   try {
     const event = await updateEvent({ eventId: req.params.id, data, bannerImage });

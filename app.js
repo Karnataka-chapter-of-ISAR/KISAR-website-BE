@@ -20,7 +20,6 @@ import adminGalleryRoutes from './routes/admin/gallery.routes.js';
 import adminCategoriesRoutes from './routes/admin/categories.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
-import { UPLOADS_DIR } from './middleware/uploadBannerImage.js';
 import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
@@ -50,10 +49,12 @@ app.set('trust proxy', 1);
 // headers, so 'require-corp' would block them outright; 'credentialless'
 // still isolates the page (strips credentials on cross-origin subrequests)
 // without requiring every third party to opt in. crossOriginResourcePolicy
-// stays relaxed to cross-origin because /uploads (banner/gallery/news images)
-// is served from this origin but consumed by the separately-hosted FEs
+// stays relaxed to cross-origin because banner/gallery/news images are served
+// from the S3 bucket but consumed by the separately-hosted FEs
 // (kisar.netlify.app, kisar-admin.netlify.app) — the default same-origin
 // policy would silently break those images.
+const s3Origin = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -61,7 +62,7 @@ app.use(helmet({
       scriptSrc: ["'self'", 'https://maps.googleapis.com', 'https://maps.gstatic.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleapis.com', 'https://*.gstatic.com', 'https://*.ggpht.com'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleapis.com', 'https://*.gstatic.com', 'https://*.ggpht.com', s3Origin],
       connectSrc: ["'self'", 'https://maps.googleapis.com'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -78,7 +79,6 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https:
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(UPLOADS_DIR, '..')));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -111,7 +111,7 @@ app.use(`${API_V1}/kpi`, dashboardRoutes);
 app.use(express.static(FE_DIST_DIR));
 
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith(`${API_V1}/`) || req.path.startsWith('/uploads/')) {
+  if (req.path.startsWith(`${API_V1}/`)) {
     return next();
   }
   res.sendFile(path.join(FE_DIST_DIR, 'index.html'));
