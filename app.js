@@ -159,7 +159,7 @@ process.on('uncaughtException', (err) => {
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
-    logger.info('MongoDB connected');
+    logger.info(`MongoDB connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
     await ensureDefaultCategories();
     logger.info('Default categories ensured');
   })
