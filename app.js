@@ -18,6 +18,7 @@ import adminNewsRoutes from './routes/admin/news.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import adminGalleryRoutes from './routes/admin/gallery.routes.js';
 import adminCategoriesRoutes from './routes/admin/categories.routes.js';
+import adminMediaRoutes from './routes/admin/media.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import { sendSuccess, sendError } from './utils/response.js';
@@ -105,6 +106,7 @@ app.use(`${API_V1}/admin/news`, adminNewsRoutes);
 app.use(`${API_V1}/gallery`, galleryRoutes);
 app.use(`${API_V1}/admin/gallery`, adminGalleryRoutes);
 app.use(`${API_V1}/admin/categories`, adminCategoriesRoutes);
+app.use(`${API_V1}/admin/media`, adminMediaRoutes);
 app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
 app.use(`${API_V1}/kpi`, dashboardRoutes);
 

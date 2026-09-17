@@ -8,6 +8,8 @@ export const MESSAGES = {
   UPLOAD: {
     FILE_TOO_LARGE: 'The uploaded file exceeds the 5MB size limit.',
     UPLOAD_ERROR: 'The file could not be uploaded. Please try again.',
+    UPLOAD_SUCCESS: 'File uploaded successfully.',
+    FILE_REQUIRED: 'Please upload a file.',
   },
 
   OTP: {
