@@ -71,6 +71,31 @@ export async function deleteEventController(req, res) {
   }
 }
 
+// Standalone single-image upload used by the admin UI to build up the `images`
+// array before sending it in create/update — stored under the same "events"
+// S3 prefix as bannerImage.
+export async function uploadEventImageController(req, res) {
+  if (!req.file) {
+    return sendError(res, {
+      message: MESSAGES.UPLOAD.UPLOAD_ERROR,
+      statusCode: 422,
+      data: { errors: [MESSAGES.UPLOAD.FILE_REQUIRED] },
+    });
+  }
+
+  const url = await uploadBufferToS3({
+    buffer: req.file.buffer,
+    mimetype: req.file.mimetype,
+    key: generateObjectKey('events', req.file.originalname),
+  });
+
+  return sendSuccess(res, {
+    message: MESSAGES.UPLOAD.UPLOAD_SUCCESS,
+    statusCode: 201,
+    data: { url },
+  });
+}
+
 export async function getMyEventsController(req, res) {
   const events = await listEventsForMember(req.user.email);
 

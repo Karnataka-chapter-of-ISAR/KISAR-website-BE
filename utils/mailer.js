@@ -1,9 +1,15 @@
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 
-// Credentials/region resolve from the standard AWS env vars
-// (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION) via the SDK's
-// default credential provider chain — nothing to pass explicitly here.
-const sesClient = new SESv2Client({});
+// Uses a dedicated SES IAM user, separate from the S3 upload user
+// (AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY), so each credential set only
+// carries the permissions its own service needs.
+const sesClient = new SESv2Client({
+  region: process.env.SES_REGION,
+  credentials: {
+    accessKeyId: process.env.SES_ACCESS_KEY_ID,
+    secretAccessKey: process.env.SES_SECRET_ACCESS_KEY,
+  },
+});
 
 export async function sendEmail({ to, subject, text }) {
   await sesClient.send(new SendEmailCommand({

@@ -1,0 +1,47 @@
+name: Deploy to Elastic Beanstalk
+
+# Manual-only: pick the branch to deploy from the "Run workflow" dropdown
+# (branch selector at the top of the run form) and, if needed, override the
+# target EB environment/region below.
+on:
+  workflow_dispatch:
+    inputs:
+      environment_name:
+        description: 'Elastic Beanstalk environment name'
+        required: true
+        default: 'kisar-be-prod' # TODO: replace with your real environment name
+      region:
+        description: 'AWS region'
+        required: true
+        default: 'ap-south-1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eb-deploy-${{ inputs.environment_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # git archive only includes tracked files, so node_modules/.env/uploads
+      # (all gitignored) are excluded automatically - EB installs deps itself.
+      - name: Build deployment package
+        run: git archive --format=zip --output=deploy.zip HEAD
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.EB_DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.EB_DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          application_name: kisar-be # TODO: replace with your real EB application name
+          environment_name: ${{ inputs.environment_name }}
+          region: ${{ inputs.region }}
+          version_label: ${{ github.ref_name }}-${{ github.run_number }}-${{ github.sha }}
+          deployment_package: deploy.zip
+          wait_for_environment_recovery: 300

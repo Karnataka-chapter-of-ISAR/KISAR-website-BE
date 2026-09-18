@@ -2,12 +2,28 @@ import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
 
 const LINK_LABEL_MAX_LENGTH = 50;
 
+// `images` arrives as a real array in a JSON body, or as a single field in
+// multipart/form-data — either a JSON-encoded array string or one bare URL.
+function parseImages(images) {
+  if (Array.isArray(images)) return images;
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // not JSON — treat as a single URL
+    }
+    return [images];
+  }
+  return null;
+}
+
 // Validates a partial update payload — only keys present in the body are validated and returned.
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateUpdateEventRequest(body = {}) {
   const errors = [];
   const data = {};
-  const { title, type, capacity, date, time, location, link, linkLabel, isHighlighted } = body;
+  const { title, type, capacity, date, time, location, link, linkLabel, isHighlighted, images } = body;
 
   if (title !== undefined) {
     if (typeof title !== 'string' || !title.trim()) {
@@ -85,6 +101,17 @@ export function validateUpdateEventRequest(body = {}) {
       errors.push('isHighlighted must be a boolean.');
     } else {
       data.isHighlighted = isHighlighted === true || isHighlighted === 'true';
+    }
+  }
+
+  if (images !== undefined) {
+    const parsedImages = parseImages(images);
+    if (parsedImages === null) {
+      errors.push('Images must be an array of image URLs.');
+    } else if (parsedImages.some((url) => typeof url !== 'string' || !url.trim())) {
+      errors.push('Each image must be a non-empty URL string.');
+    } else {
+      data.images = parsedImages.map((url) => url.trim());
     }
   }
 

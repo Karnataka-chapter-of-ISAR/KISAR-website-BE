@@ -12,6 +12,7 @@ const eventSchema = new mongoose.Schema(
     link:        { type: String, trim: true, default: null },
     linkLabel:   { type: String, trim: true, default: 'Meeting Link' },
     bannerImage: { type: String, trim: true, default: null },
+    images:      { type: [String], default: [] },
     isHighlighted: { type: Boolean, default: false },
     createdBy:   { type: String, trim: true, default: null },
     registeredMembers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
