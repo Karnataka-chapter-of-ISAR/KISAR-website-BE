@@ -9,7 +9,7 @@ on:
       environment_name:
         description: 'Elastic Beanstalk environment name'
         required: true
-        default: 'kisar-be-prod' # TODO: replace with your real environment name
+        default: 'kisar-backend-prod'
       region:
         description: 'AWS region'
         required: true
@@ -37,9 +37,9 @@ jobs:
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
-          aws_access_key: ${{ secrets.EB_DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.EB_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          application_name: kisar-be # TODO: replace with your real EB application name
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: kisar-backend
           environment_name: ${{ inputs.environment_name }}
           region: ${{ inputs.region }}
           version_label: ${{ github.ref_name }}-${{ github.run_number }}-${{ github.sha }}
