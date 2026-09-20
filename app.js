@@ -94,6 +94,15 @@ const API_V1 = '/api/v1';
 // health API
 app.get(`${API_V1}/health`, (req, res) => sendSuccess(res, { message: MESSAGES.GENERAL.SERVER_OK }));
 
+// db health API
+app.get(`${API_V1}/health/db`, (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
+  if (!dbConnected) {
+    return sendError(res, { message: MESSAGES.GENERAL.DB_UNAVAILABLE, statusCode: 503, data: { db: 'down' } });
+  }
+  return sendSuccess(res, { message: MESSAGES.GENERAL.SERVER_OK, data: { db: 'up' } });
+});
+
 app.use(`${API_V1}/auth`, authRoutes);
 
 app.use(`${API_V1}/members`, membersRoutes);

@@ -2,6 +2,7 @@ export const MESSAGES = {
 
   GENERAL: {
     SERVER_OK: 'Server is up and running.',
+    DB_UNAVAILABLE: 'Server is up, but the database connection is unavailable.',
     INTERNAL_ERROR: 'Something went wrong on our end. Please try again later.',
   },
 
