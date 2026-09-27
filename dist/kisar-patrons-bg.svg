@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1964 801" width="1964" height="801" preserveAspectRatio="xMidYMid slice">
+<defs>
+  <filter id="b60" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="60"/></filter>
+  <filter id="b30" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="30"/></filter>
+  <filter id="b12" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="12"/></filter>
+  <filter id="b3" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.5"/></filter>
+  <filter id="b1" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".8"/></filter>
+  <clipPath id="cO"><circle cx="-102" cy="581" r="488"/></clipPath>
+  <clipPath id="cI"><circle cx="-235" cy="832" r="593"/></clipPath>
+  <clipPath id="cR"><circle cx="1981" cy="564" r="347"/></clipPath>
+  <!-- inner rim shading: colour concentrated just inside the edge -->
+  <radialGradient id="edgeO" cx="-102" cy="581" r="488" gradientUnits="userSpaceOnUse">
+    <stop offset=".55" stop-color="#e2c6f8" stop-opacity="0"/><stop offset=".9" stop-color="#dcc2f8" stop-opacity=".55"/>
+    <stop offset=".985" stop-color="#e6d6fc" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity=".9"/></radialGradient>
+  <radialGradient id="edgeI" cx="-235" cy="832" r="593" gradientUnits="userSpaceOnUse">
+    <stop offset=".6" stop-color="#fbe3f7" stop-opacity="0"/><stop offset=".93" stop-color="#fcd6f2" stop-opacity=".55"/>
+    <stop offset=".985" stop-color="#fde6f7" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity=".95"/></radialGradient>
+  <radialGradient id="edgeR" cx="1981" cy="564" r="347" gradientUnits="userSpaceOnUse">
+    <stop offset=".5" stop-color="#ecc9f7" stop-opacity="0"/><stop offset=".92" stop-color="#e9d2fa" stop-opacity=".5"/>
+    <stop offset=".985" stop-color="#f1e6fd" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity=".95"/></radialGradient>
+</defs>
+
+<!-- base -->
+<rect width="1964" height="801" fill="#fcf3fb"/>
+<ellipse cx="60" cy="40" rx="360" ry="180" fill="#e6dcfd" opacity="0.8" filter="url(#b60)"/>
+<ellipse cx="1800" cy="140" rx="330" ry="190" fill="#fdc9ec" opacity="1" filter="url(#b60)"/>
+<ellipse cx="1600" cy="80" rx="260" ry="140" fill="#fde0f3" opacity="0.9" filter="url(#b60)"/>
+<ellipse cx="1980" cy="60" rx="200" ry="200" fill="#fbd5f1" opacity="0.8" filter="url(#b60)"/>
+<ellipse cx="1500" cy="520" rx="170" ry="320" fill="#ebe0fd" opacity="0.95" filter="url(#b60)"/>
+<ellipse cx="1750" cy="800" rx="400" ry="120" fill="#eadcfb" opacity="0.7" filter="url(#b60)"/>
+<ellipse cx="700" cy="820" rx="420" ry="110" fill="#fbe4f6" opacity="0.8" filter="url(#b60)"/>
+<ellipse cx="1150" cy="820" rx="380" ry="90" fill="#f5e6fb" opacity="0.6" filter="url(#b60)"/>
+<ellipse cx="980" cy="330" rx="300" ry="120" fill="#fdeaf7" opacity="0.5" filter="url(#b60)"/>
+<!-- lavender halo outside the left sphere -->
+<ellipse cx="370" cy="330" rx="70" ry="170" fill="#dcd3fd" opacity="0.8" filter="url(#b60)"/>
+<ellipse cx="430" cy="580" rx="60" ry="160" fill="#fbdcf4" opacity="0.7" filter="url(#b60)"/>
+
+<!-- ===== LEFT OUTER SPHERE ===== -->
+<circle cx="-102" cy="581" r="494" fill="#d9ccfb" opacity=".35" filter="url(#b12)"/>
+<g clip-path="url(#cO)">
+  <circle cx="-102" cy="581" r="488" fill="#e6d3fb"/>
+  <ellipse cx="20" cy="200" rx="260" ry="170" fill="#dfcbfa" opacity="1" filter="url(#b60)"/>
+  <ellipse cx="300" cy="280" rx="90" ry="160" fill="#e2dafd" opacity="0.9" filter="url(#b30)"/>
+  <ellipse cx="320" cy="500" rx="70" ry="190" fill="#f7c4f1" opacity="1" filter="url(#b30)"/>
+  <ellipse cx="250" cy="380" rx="60" ry="90" fill="#efc2f5" opacity="0.8" filter="url(#b30)"/>
+  <ellipse cx="330" cy="620" rx="80" ry="140" fill="#fbd5f2" opacity="0.9" filter="url(#b60)"/>
+  <ellipse cx="120" cy="390" rx="150" ry="120" fill="#ecc5f7" opacity="0.8" filter="url(#b60)"/>
+  <circle cx="-102" cy="581" r="488" fill="url(#edgeO)"/>
+</g>
+<circle cx="-102" cy="581" r="486.5" fill="none" stroke="#fff" stroke-width="3" opacity=".5" filter="url(#b3)"/>
+<circle cx="-102" cy="581" r="481" fill="none" stroke="#fff" stroke-width="8" opacity=".25" filter="url(#b3)" clip-path="url(#cO)"/>
+
+<!-- ===== LEFT INNER SPHERE ===== -->
+<circle cx="-235" cy="832" r="601" fill="#e7b9ee" opacity=".3" filter="url(#b12)"/>
+<g clip-path="url(#cI)">
+  <circle cx="-235" cy="832" r="593" fill="#fbe2f7"/>
+  <ellipse cx="60" cy="380" rx="180" ry="120" fill="#fcd3f1" opacity="0.9" filter="url(#b60)"/>
+  <ellipse cx="230" cy="470" rx="70" ry="110" fill="#f9c9f1" opacity="0.85" filter="url(#b30)"/>
+  <ellipse cx="120" cy="520" rx="160" ry="130" fill="#fde4f6" opacity="0.9" filter="url(#b60)"/>
+  <ellipse cx="40" cy="760" rx="220" ry="120" fill="#efdffb" opacity="0.95" filter="url(#b60)"/>
+  <ellipse cx="260" cy="700" rx="100" ry="120" fill="#fde6f6" opacity="0.8" filter="url(#b60)"/>
+  <circle cx="-235" cy="832" r="593" fill="url(#edgeI)"/>
+</g>
+<circle cx="-235" cy="832" r="591.5" fill="none" stroke="#fff" stroke-width="3" opacity=".55" filter="url(#b3)"/>
+<circle cx="-235" cy="832" r="586" fill="none" stroke="#fff" stroke-width="8" opacity=".3" filter="url(#b3)" clip-path="url(#cI)"/>
+
+<!-- ===== RIGHT SPHERE ===== -->
+<circle cx="1981" cy="564" r="355" fill="#dccdfa" opacity=".35" filter="url(#b12)"/>
+<g clip-path="url(#cR)">
+  <circle cx="1981" cy="564" r="347" fill="#ecd3f9"/>
+  <ellipse cx="1710" cy="320" rx="90" ry="100" fill="#ebdcfc" opacity="0.95" filter="url(#b60)"/>
+  <ellipse cx="1860" cy="470" rx="150" ry="190" fill="#f3c4f3" opacity="1" filter="url(#b60)"/>
+  <ellipse cx="1960" cy="330" rx="120" ry="120" fill="#f0cdf7" opacity="0.8" filter="url(#b60)"/>
+  <ellipse cx="1780" cy="720" rx="200" ry="110" fill="#e4d6fb" opacity="0.95" filter="url(#b60)"/>
+  <ellipse cx="1670" cy="560" rx="60" ry="150" fill="#eddcfc" opacity="0.8" filter="url(#b30)"/>
+  <circle cx="1981" cy="564" r="347" fill="url(#edgeR)"/>
+</g>
+<circle cx="1981" cy="564" r="345.5" fill="none" stroke="#fff" stroke-width="3" opacity=".55" filter="url(#b3)"/>
+<circle cx="1981" cy="564" r="340" fill="none" stroke="#fff" stroke-width="8" opacity=".3" filter="url(#b3)" clip-path="url(#cR)"/>
+</svg>
