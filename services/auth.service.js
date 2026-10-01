@@ -67,7 +67,7 @@ export async function requestOtp(email) {
   await otpRepository.createOtp({ email, otpHash, expiresAt });
 
   try {
-    const { subject, html, text } = renderOtp({ otp, expiresAt });
+    const { subject, html, text } = renderOtp({ otp, expiresInMinutes: OTP_TTL_MS / 60000 });
     await sendEmail({ to: email, subject, html, text });
   } catch (err) {
     logger.error(`[requestOtp] SES send failed for ${email}: ${err.name}: ${err.message}`);
