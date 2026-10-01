@@ -97,8 +97,8 @@ export function renderLayout({ preheader, eyebrow, title, subtitle, bodyHtml }) 
 
         <tr>
           <td bgcolor="${PLUM}" style="background-color:${PLUM};padding:24px 32px;font-family:${SANS_FONT};">
-            <div style="font-family:${DISPLAY_FONT};font-size:17px;font-weight:700;letter-spacing:1px;color:#ffffff;">KISAR</div>
-            <div style="font-size:12px;color:#c06aa3;padding:2px 0 14px;">Karnataka Chapter of ISAR</div>
+            <div style="font-family:${DISPLAY_FONT};font-size:17px;font-weight:700;letter-spacing:1px;color:#ffffff;">Karnataka Chapter of ISAR</div>
+            <div style="font-size:12px;color:#c06aa3;padding:2px 0 14px;">Affiliated with the Indian Society of Assisted Reproduction (<a href="https://www.isarindia.net/" target="_blank" style="color:#c06aa3;text-decoration:underline;">ISAR</a>)</div>
             <div style="font-size:11px;line-height:17px;color:#e7b9d6;">This is an automated message. Please do not reply to this email.</div>
             <div style="font-size:11px;line-height:17px;color:#e7b9d6;">Need help? <a href="mailto:info@kisar.org.in" style="color:#ffffff;">info@kisar.org.in</a> &nbsp;&middot;&nbsp; <a href="https://kisar.org.in" style="color:#ffffff;">kisar.org.in</a></div>
           </td>
