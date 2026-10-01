@@ -119,6 +119,10 @@ app.use(`${API_V1}/admin/media`, adminMediaRoutes);
 app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
 app.use(`${API_V1}/kpi`, dashboardRoutes);
 
+// Images referenced by outgoing emails (see templates/emails). Kept outside
+// dist/ so they have stable, unhashed URLs that survive FE rebuilds.
+app.use('/email', express.static(path.join(__dirname, 'public', 'email'), { maxAge: '7d' }));
+
 app.use(express.static(FE_DIST_DIR));
 
 app.get('*', (req, res, next) => {

@@ -5,7 +5,8 @@ const sesClient = new SESv2Client({
   region: process.env.SES_REGION,
 });
 
-export async function sendEmail({ to, subject, text }) {
+// `text` is always sent; pass `html` as well for a styled version.
+export async function sendEmail({ to, subject, text, html }) {
   const replyTo = process.env.SES_REPLY_TO;
   const configSet = process.env.SES_CONFIG_SET;
 
@@ -17,7 +18,10 @@ export async function sendEmail({ to, subject, text }) {
     Content: {
       Simple: {
         Subject: { Data: subject, Charset: 'UTF-8' },
-        Body: { Text: { Data: text, Charset: 'UTF-8' } },
+        Body: {
+          Text: { Data: text, Charset: 'UTF-8' },
+          ...(html && { Html: { Data: html, Charset: 'UTF-8' } }),
+        },
       },
     },
   }));

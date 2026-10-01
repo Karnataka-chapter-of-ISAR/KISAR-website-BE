@@ -6,6 +6,7 @@ import { hashToken } from '../utils/tokenHash.js';
 import { AppError } from '../utils/AppError.js';
 import { sendEmail } from '../utils/mailer.js';
 import logger from '../utils/logger.js';
+import { renderOtp } from '../templates/emails/otp.js';
 import { MESSAGES } from '../constants/messages.js';
 import * as otpRepository from '../repositories/otp.repository.js';
 import * as refreshTokenRepository from '../repositories/refreshToken.repository.js';
@@ -14,6 +15,7 @@ import * as memberRepository from '../repositories/member.repository.js';
 
 const ACCESS_TOKEN_JWT_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const OTP_TTL_MS = 10 * 60 * 1000;
 
 const DEV_EMAIL = 'test@gmail.com';
 const DEV_OTP   = '948260';
@@ -61,14 +63,12 @@ export async function requestOtp(email) {
   const otpHash = await bcrypt.hash(otp, 10);
 
   await otpRepository.deleteOtpsForEmail(email);
-  await otpRepository.createOtp({ email, otpHash, expiresAt: new Date(Date.now() + 10 * 60 * 1000) });
+  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+  await otpRepository.createOtp({ email, otpHash, expiresAt });
 
   try {
-    await sendEmail({
-      to: email,
-      subject: 'Your login code',
-      text: `Your login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.`,
-    });
+    const { subject, html, text } = renderOtp({ otp, expiresAt });
+    await sendEmail({ to: email, subject, html, text });
   } catch (err) {
     logger.error(`[requestOtp] SES send failed for ${email}: ${err.name}: ${err.message}`);
     await otpRepository.deleteOtpsForEmail(email);
