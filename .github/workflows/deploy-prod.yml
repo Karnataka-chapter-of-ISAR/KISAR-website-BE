@@ -1,9 +1,11 @@
 name: Deploy to Elastic Beanstalk
 
-# Manual-only: pick the branch to deploy from the "Run workflow" dropdown
-# (branch selector at the top of the run form) and, if needed, override the
-# target EB environment/region below.
+# Deploys automatically on every push to main. It can also still be run
+# manually from the "Run workflow" dropdown to deploy another branch or
+# override the target EB environment/region below.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment_name:
@@ -19,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: eb-deploy-${{ inputs.environment_name }}
+  group: eb-deploy-${{ inputs.environment_name || 'kisar-backend-prod' }}
   cancel-in-progress: false
 
 jobs:
@@ -40,8 +42,8 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: kisar-backend
-          environment_name: ${{ inputs.environment_name }}
-          region: ${{ inputs.region }}
+          environment_name: ${{ inputs.environment_name || 'kisar-backend-prod' }}
+          region: ${{ inputs.region || 'ap-south-1' }}
           version_label: ${{ github.ref_name }}-${{ github.run_number }}-${{ github.sha }}
           deployment_package: deploy.zip
           wait_for_environment_recovery: 300

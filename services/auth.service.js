@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { hashToken } from '../utils/tokenHash.js';
 import { AppError } from '../utils/AppError.js';
 import { sendEmail } from '../utils/mailer.js';
+import logger from '../utils/logger.js';
 import { MESSAGES } from '../constants/messages.js';
 import * as otpRepository from '../repositories/otp.repository.js';
 import * as refreshTokenRepository from '../repositories/refreshToken.repository.js';
@@ -62,11 +63,17 @@ export async function requestOtp(email) {
   await otpRepository.deleteOtpsForEmail(email);
   await otpRepository.createOtp({ email, otpHash, expiresAt: new Date(Date.now() + 10 * 60 * 1000) });
 
-  await sendEmail({
-    to: email,
-    subject: 'Your login code',
-    text: `Your login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.`,
-  });
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Your login code',
+      text: `Your login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.`,
+    });
+  } catch (err) {
+    logger.error(`[requestOtp] SES send failed for ${email}: ${err.name}: ${err.message}`);
+    await otpRepository.deleteOtpsForEmail(email);
+    throw new AppError(MESSAGES.OTP.SEND_FAILED, 502);
+  }
 }
 
 export async function verifyOtp(email, otp) {

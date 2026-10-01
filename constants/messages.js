@@ -19,6 +19,7 @@ export const MESSAGES = {
     INVALID_OR_EXPIRED: 'The code you entered is invalid or has expired. Please request a new one.',
     TOO_MANY_ATTEMPTS: 'Too many incorrect attempts. Your code has been invalidated. Please request a new one.',
     RATE_LIMITED: 'You have requested too many codes. Please wait 15 minutes before trying again.',
+    SEND_FAILED: 'We could not send the verification code right now. Please try again in a few minutes.',
     NOT_A_MEMBER: 'This email is not registered as a member. Please contact your administrator.',
   },
 
