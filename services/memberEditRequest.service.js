@@ -6,8 +6,6 @@ import { getFieldMode } from '../utils/profileUtil.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as memberEditRequestRepository from '../repositories/memberEditRequest.repository.js';
 
-// Arrays (e.g. experience) are new objects on every submission even when
-// logically unchanged, so plain === would never treat them as a no-op.
 function isSameValue(a, b) {
   if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   return a === b;

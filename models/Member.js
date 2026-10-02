@@ -1,17 +1,5 @@
 import mongoose from 'mongoose';
 
-// from/to are "YYYY-MM" strings (not Date) to avoid timezone shifting a
-// month-only value across a day boundary. `to` is null for the current/ongoing entry.
-const experienceEntrySchema = new mongoose.Schema(
-  {
-    title:         { type: String, trim: true, required: true },
-    instituteName: { type: String, trim: true, required: true },
-    from:          { type: String, trim: true, required: true },
-    to:            { type: String, trim: true, default: null },
-  },
-  { _id: false },
-);
-
 const memberSchema = new mongoose.Schema(
   {
     memberId:          { type: String, unique: true, sparse: true, trim: true },
@@ -38,7 +26,7 @@ const memberSchema = new mongoose.Schema(
     lat:               { type: Number, default: null },
     lng:               { type: Number, default: null },
     colorIndex:        { type: Number, default: 0 },
-    experience:        { type: [experienceEntrySchema], default: [] },
+    experience:        { type: String, trim: true, default: null },
     // Field names currently awaiting admin review — see MemberEditRequest.
     // Locked fields are disabled for further edits until approved/rejected.
     lockedFields:      { type: [String], default: [] },
