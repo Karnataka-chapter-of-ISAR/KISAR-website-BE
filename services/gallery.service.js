@@ -12,6 +12,12 @@ export async function listGalleryItems() {
   return galleryRepository.findAllGalleryItems();
 }
 
+// Public gallery = admin-curated gallery items + every image the admin attached
+// to a past event (read-only here, managed from the event). Paginated in the DB.
+export async function listPublicGalleryItems({ skip, limit }) {
+  return galleryRepository.findPublicGalleryPage({ skip, limit, beforeDate: new Date() });
+}
+
 export async function updateGalleryItem({ galleryId, data, image }) {
   if (!mongoose.Types.ObjectId.isValid(galleryId)) throw new AppError(MESSAGES.GALLERY.NOT_FOUND, 404);
 

@@ -1,6 +1,7 @@
 import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
 
 const LINK_LABEL_MAX_LENGTH = 50;
+const LOCKED_FIELDS = ['accessType', 'pricing', 'registrationFields'];
 
 // `images` arrives as a real array in a JSON body, or as a single field in
 // multipart/form-data — either a JSON-encoded array string or one bare URL.
@@ -23,7 +24,13 @@ function parseImages(images) {
 export function validateUpdateEventRequest(body = {}) {
   const errors = [];
   const data = {};
-  const { title, type, capacity, date, time, location, link, linkLabel, isHighlighted, images } = body;
+  const { title, type, date, time, location, link, linkLabel, isHighlighted, images } = body;
+
+  // Fixed once the event is created: attendees register (and pay) against these.
+  const lockedFields = LOCKED_FIELDS.filter((field) => body[field] !== undefined);
+  if (lockedFields.length > 0) {
+    errors.push(`${lockedFields.join(', ')} cannot be changed after the event is created.`);
+  }
 
   if (title !== undefined) {
     if (typeof title !== 'string' || !title.trim()) {
@@ -38,15 +45,6 @@ export function validateUpdateEventRequest(body = {}) {
       errors.push(`Type must be one of: ${EVENT_TYPES.join(', ')}.`);
     } else {
       data.type = type;
-    }
-  }
-
-  if (capacity !== undefined) {
-    const capacityNum = Number(capacity);
-    if (capacity === null || capacity === '' || !Number.isInteger(capacityNum) || capacityNum < 1) {
-      errors.push('Capacity must be a positive whole number.');
-    } else {
-      data.capacity = capacityNum;
     }
   }
 

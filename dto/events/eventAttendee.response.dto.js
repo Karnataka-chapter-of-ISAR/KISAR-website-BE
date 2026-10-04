@@ -1,8 +1,18 @@
-export function toEventAttendeeResponseDto(member) {
+export function toEventAttendeeResponseDto(registration) {
   return {
-    id:    member._id,
-    name:  member.name,
-    email: member.email,
-    phone: member.phone,
+    id:           registration._id,
+    name:         registration.name,
+    email:        registration.email,
+    phone:        registration.phone,
+    isMember:     registration.isMember,
+    isarMemberId: registration.isarMemberId ?? null,
+    answers:      registration.answers ?? [],
+    amount:       registration.amount,
+    currency:     registration.currency,
+    status:       registration.status,
+    paidAt:       registration.payment?.paidAt ?? null,
+    refund:       registration.refund?.status ? registration.refund : null,
+    duplicatePayments: registration.duplicatePayments ?? [],
+    registeredAt: registration.createdAt,
   };
 }

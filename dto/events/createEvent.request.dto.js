@@ -1,4 +1,5 @@
 import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
+import { validateAccessType, validatePricing, validateRegistrationFields } from './eventRegistrationConfig.dto.js';
 
 const LINK_LABEL_MAX_LENGTH = 50;
 
@@ -23,7 +24,7 @@ function parseImages(images) {
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateCreateEventRequest(body = {}) {
   const errors = [];
-  const { title, type, capacity, date, time, location, link, linkLabel, isHighlighted, images } = body;
+  const { title, type, date, time, location, link, linkLabel, isHighlighted, images, accessType, pricing, registrationFields } = body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     errors.push('Event title is required.');
@@ -31,11 +32,6 @@ export function validateCreateEventRequest(body = {}) {
 
   if (!type || !EVENT_TYPES.includes(type)) {
     errors.push(`Type is required and must be one of: ${EVENT_TYPES.join(', ')}.`);
-  }
-
-  const capacityNum = Number(capacity);
-  if (capacity === undefined || capacity === null || capacity === '' || !Number.isInteger(capacityNum) || capacityNum < 1) {
-    errors.push('Capacity is required and must be a positive whole number.');
   }
 
   const parsedDate = date ? new Date(date) : null;
@@ -70,6 +66,10 @@ export function validateCreateEventRequest(body = {}) {
     errors.push('Each image must be a non-empty URL string.');
   }
 
+  const validAccessType = validateAccessType(accessType, errors);
+  const validPricing = validAccessType ? validatePricing(pricing, validAccessType, errors) : null;
+  const validRegistrationFields = validateRegistrationFields(registrationFields, errors);
+
   if (errors.length > 0) return { valid: false, errors };
 
   const parsedIsHighlighted = isHighlighted === true || isHighlighted === 'true';
@@ -79,7 +79,6 @@ export function validateCreateEventRequest(body = {}) {
     data: {
       title: title.trim(),
       type,
-      capacity: capacityNum,
       date: parsedDate,
       time,
       location: location.trim(),
@@ -87,6 +86,9 @@ export function validateCreateEventRequest(body = {}) {
       linkLabel: linkLabel ? linkLabel.trim() : undefined,
       isHighlighted: parsedIsHighlighted,
       images: parsedImages.map((url) => url.trim()),
+      accessType: validAccessType,
+      pricing: validPricing,
+      registrationFields: validRegistrationFields,
     },
   };
 }

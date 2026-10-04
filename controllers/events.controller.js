@@ -2,11 +2,12 @@ import { validateCreateEventRequest } from '../dto/events/createEvent.request.dt
 import { validateUpdateEventRequest } from '../dto/events/updateEvent.request.dto.js';
 import { toEventResponseDto } from '../dto/events/event.response.dto.js';
 import { toEventAttendeeResponseDto } from '../dto/events/eventAttendee.response.dto.js';
-import { createEvent, updateEvent, deleteEvent, listEventsForMember, registerForEvent, getEventAttendees } from '../services/events.service.js';
+import { createEvent, updateEvent, deleteEvent, listEventsForMember, getEventAttendees } from '../services/events.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 import { MESSAGES } from '../constants/messages.js';
+import { REGISTRATION_STATUS } from '../constants/events.js';
 import { uploadBufferToS3, generateObjectKey } from '../utils/s3.js';
 
 export async function createEventController(req, res) {
@@ -109,34 +110,19 @@ export async function getEventAttendeesController(req, res) {
   const { page, limit, skip } = parsePagination(req.query);
 
   try {
-    const { event, members, totalCount } = await getEventAttendees({ eventId: req.params.id, skip, limit });
+    const status = Object.values(REGISTRATION_STATUS).includes(req.query.status) ? req.query.status : undefined;
+    const { event, registrations, totalCount, registeredCount } = await getEventAttendees({ eventId: req.params.id, status, skip, limit });
     return sendSuccess(res, {
       message: MESSAGES.EVENTS.ATTENDEES_FETCH_SUCCESS,
       data: {
         event: {
           id:              event._id,
           title:           event.title,
-          capacity:        event.capacity,
-          registeredCount: event.registeredMembers.length,
+          registeredCount,
         },
-        attendees: members.map(toEventAttendeeResponseDto),
+        attendees: registrations.map(toEventAttendeeResponseDto),
         pagination: buildPaginationMeta({ page, limit, totalCount }),
       },
-    });
-  } catch (err) {
-    if (err instanceof AppError) {
-      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
-    }
-    throw err;
-  }
-}
-
-export async function registerForEventController(req, res) {
-  try {
-    const event = await registerForEvent({ eventId: req.params.id, email: req.user.email });
-    return sendSuccess(res, {
-      message: MESSAGES.EVENTS.REGISTER_SUCCESS,
-      data: { event: toEventResponseDto(event) },
     });
   } catch (err) {
     if (err instanceof AppError) {

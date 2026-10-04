@@ -3,6 +3,9 @@ import mongoose from 'mongoose';
 const otpSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
   otpHash: { type: String, required: true },
+  // 'login' (default) or 'event_registration' — keeps the two flows from
+  // clobbering each other's codes for the same email.
+  purpose: { type: String, default: 'login' },
   expiresAt: { type: Date, required: true },
   attempts: { type: Number, default: 0 },
   used: { type: Boolean, default: false },

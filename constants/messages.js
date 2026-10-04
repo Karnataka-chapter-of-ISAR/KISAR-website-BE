@@ -76,8 +76,38 @@ export const MESSAGES = {
     NOT_A_MEMBER: 'This email is not registered as a member. Please contact your administrator.',
     NOT_FOUND: 'Event not found.',
     ALREADY_REGISTERED: 'You are already registered for this event.',
-    EVENT_FULL: 'This event has reached its capacity.',
     ATTENDEES_FETCH_SUCCESS: 'Attendees fetched successfully.',
+    PAST_EVENT_NOT_DELETABLE: 'Past events cannot be deleted.',
+    PAID_REGISTRATIONS_EXIST: 'This event still has paid registrations that must be refunded before it can be deleted.',
+  },
+
+  REGISTRATION: {
+    OTP_SENT: 'A 6-digit verification code has been sent to your email. Please check your inbox.',
+    EMAIL_VERIFIED: 'Your email has been verified.',
+    EMAIL_NOT_VERIFIED: 'Please verify your email address before registering.',
+    MEMBERS_ONLY: 'This event is open to KISAR members only.',
+    EVENT_CLOSED: 'Registration is closed because this event has already taken place.',
+    REGISTRATIONS_CLOSED: 'Registration for this event is closed.',
+    REGISTERED: 'You have been registered for this event.',
+    PAYMENT_REQUIRED: 'Registration saved. Complete the payment to confirm your seat.',
+    STATUS_FETCH_SUCCESS: 'Registration status fetched successfully.',
+    NOT_FOUND: 'Registration not found.',
+    VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
+  },
+
+  REFUNDS: {
+    INITIATED: 'Refunds have been initiated.',
+    STATUS_FETCH_SUCCESS: 'Refund status fetched successfully.',
+    SINGLE_INITIATED: 'Refund initiated for this registration.',
+    NOT_REFUNDABLE: 'This registration has no paid amount that can be refunded.',
+    PAST_EVENT: 'Refunds for a whole event can only be started for upcoming events.',
+    GATEWAY_FAILED: 'The refund could not be started. You can retry it from the refund status.',
+  },
+
+  PAYMENTS: {
+    NOT_CONFIGURED: 'Online payments are not available right now. Please try again later.',
+    GATEWAY_ERROR: 'We could not reach the payment gateway. Please try again in a few minutes.',
+    INVALID_SIGNATURE: 'Invalid webhook signature.',
   },
 
   NEWS: {

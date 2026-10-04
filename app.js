@@ -1,3 +1,4 @@
+import dns from 'dns';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
@@ -11,10 +12,13 @@ import authRoutes from './routes/auth.routes.js';
 import membersRoutes from './routes/members.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import adminEventsRoutes from './routes/admin/events.routes.js';
+import adminRegistrationsRoutes from './routes/admin/registrations.routes.js';
 import adminMembersRoutes from './routes/admin/members.routes.js';
 import adminMemberEditRequestsRoutes from './routes/admin/memberEditRequests.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import adminNewsRoutes from './routes/admin/news.routes.js';
+import registrationsRoutes from './routes/registrations.routes.js';
+import paymentsRoutes from './routes/payments.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import adminGalleryRoutes from './routes/admin/gallery.routes.js';
 import adminCategoriesRoutes from './routes/admin/categories.routes.js';
@@ -28,6 +32,10 @@ import { ensureDefaultCategories } from './services/category.service.js';
 import { AppError } from './utils/AppError.js';
 
 dotenv.config();
+
+// Local-only: Node's resolver can end up pointed at 127.0.0.1 (no DNS listening),
+// which breaks the mongodb+srv:// lookup with `querySrv ECONNREFUSED`.
+if (process.env.NODE_ENV !== 'production') dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FE_DIST_DIR = path.join(__dirname, 'dist');
@@ -79,7 +87,8 @@ app.use(helmet({
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
-app.use(express.json());
+// Keep the raw bytes: the Cashfree webhook signature is computed over the exact body.
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -107,7 +116,10 @@ app.use(`${API_V1}/auth`, authRoutes);
 
 app.use(`${API_V1}/members`, membersRoutes);
 app.use(`${API_V1}/events`, eventsRoutes);
+app.use(`${API_V1}/registrations`, registrationsRoutes);
+app.use(`${API_V1}/payments`, paymentsRoutes);
 app.use(`${API_V1}/admin/events`, adminEventsRoutes);
+app.use(`${API_V1}/admin/registrations`, adminRegistrationsRoutes);
 app.use(`${API_V1}/admin/members`, adminMembersRoutes);
 app.use(`${API_V1}/admin/member-edit-requests`, adminMemberEditRequestsRoutes);
 app.use(`${API_V1}/news`, newsRoutes);

@@ -1,5 +1,7 @@
 import * as eventRepository from '../repositories/event.repository.js';
 import * as memberRepository from '../repositories/member.repository.js';
+import * as registrationRepository from '../repositories/registration.repository.js';
+import { withRegisteredCounts } from './events.service.js';
 
 function getYearsActive() {
   const [day, month, year] = process.env.DATE_START.split('-').map(Number);
@@ -32,24 +34,27 @@ export async function getDashboardOverview({ email } = {}) {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  const [totalUsers, events, citiesCovered, member] = await Promise.all([
+  const [totalUsers, events, eventsCount, citiesCovered, member] = await Promise.all([
     memberRepository.countMembers(),
     eventRepository.findHighlightedEvents(startOfToday),
+    eventRepository.countPastEvents(startOfToday),
     memberRepository.countDistinctCities(),
     email ? memberRepository.findMemberByEmail(email.toLowerCase()) : null,
   ]);
 
-  const eventsWithRegistration = member
-    ? events.map((event) => ({
-        ...event,
-        registered: event.registeredMembers.some((id) => id.equals(member._id)),
-      }))
-    : events;
+  const eventsWithCounts = await withRegisteredCounts(events);
+  const registeredIds = member
+    ? await registrationRepository.findRegisteredEventIds({ email: member.email, eventIds: events.map((event) => event._id) })
+    : null;
+
+  const eventsWithRegistration = registeredIds
+    ? eventsWithCounts.map((event) => ({ ...event, registered: registeredIds.has(String(event._id)) }))
+    : eventsWithCounts;
 
   return {
     totalUsers,
     events: eventsWithRegistration,
-    eventsCount: events.length,
+    eventsCount,
     citiesCovered,
     yearsActive: getYearsActive(),
   };

@@ -3,18 +3,13 @@ import { EVENT_SEARCHABLE_STRING_FIELDS } from '../constants/events.js';
 import { escapeRegex } from '../utils/regex.js';
 
 // Case-insensitive substring match across every searchable string field, plus
-// an exact match on `capacity` when the term is all digits, plus a same-day
-// match on `date` when the term parses as a date (e.g. "2026-08-14").
+// a same-day match on `date` when the term parses as a date (e.g. "2026-08-14").
 function buildEventSearchFilter(search) {
   if (!search || !search.trim()) return {};
 
   const term = search.trim();
   const pattern = new RegExp(escapeRegex(term), 'i');
   const or = EVENT_SEARCHABLE_STRING_FIELDS.map(field => ({ [field]: pattern }));
-
-  if (/^\d+$/.test(term)) {
-    or.push({ capacity: Number(term) });
-  }
 
   const parsedDate = new Date(term);
   if (!isNaN(parsedDate.getTime())) {
@@ -52,22 +47,18 @@ export function deleteEvent(eventId) {
   return Event.findByIdAndDelete(eventId).lean();
 }
 
+export function closeRegistrations(eventId) {
+  return Event.findByIdAndUpdate(eventId, { registrationsClosed: true }, { new: true }).lean();
+}
+
 export function countUpcomingEvents(fromDate) {
   return Event.countDocuments({ date: { $gte: fromDate } });
 }
 
-export function findNextEvent(fromDate) {
-  return Event.findOne({ date: { $gte: fromDate } }).sort({ date: 1, time: 1 }).lean();
+export function countPastEvents(beforeDate) {
+  return Event.countDocuments({ date: { $lt: beforeDate } });
 }
 
-export function registerMember(eventId, memberId) {
-  return Event.findOneAndUpdate(
-    {
-      _id: eventId,
-      registeredMembers: { $ne: memberId },
-      $expr: { $lt: [{ $size: '$registeredMembers' }, '$capacity'] },
-    },
-    { $push: { registeredMembers: memberId } },
-    { new: true },
-  ).lean();
+export function findNextEvent(fromDate) {
+  return Event.findOne({ date: { $gte: fromDate } }).sort({ date: 1, time: 1 }).lean();
 }
