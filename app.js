@@ -24,12 +24,14 @@ import adminGalleryRoutes from './routes/admin/gallery.routes.js';
 import adminCategoriesRoutes from './routes/admin/categories.routes.js';
 import adminMediaRoutes from './routes/admin/media.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
+import adminMailsRoutes from './routes/admin/mails.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
 import { ensureDefaultCategories } from './services/category.service.js';
 import { AppError } from './utils/AppError.js';
+import { BULK_MAIL_BODY_LIMIT } from './constants/mails.js';
 
 dotenv.config();
 
@@ -87,6 +89,10 @@ app.use(helmet({
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
+// Designed bulk emails carry a full HTML document, which blows past the default
+// 100kb JSON limit. This must be registered before the global parser below —
+// body-parser skips a request that has already been parsed.
+app.use('/api/v1/admin/mails', express.json({ limit: BULK_MAIL_BODY_LIMIT }));
 // Keep the raw bytes: the Cashfree webhook signature is computed over the exact body.
 app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 
@@ -129,6 +135,7 @@ app.use(`${API_V1}/admin/gallery`, adminGalleryRoutes);
 app.use(`${API_V1}/admin/categories`, adminCategoriesRoutes);
 app.use(`${API_V1}/admin/media`, adminMediaRoutes);
 app.use(`${API_V1}/admin/dashboard`, adminDashboardRoutes);
+app.use(`${API_V1}/admin/mails`, adminMailsRoutes);
 app.use(`${API_V1}/kpi`, dashboardRoutes);
 
 // Images referenced by outgoing emails (see templates/emails). Kept outside

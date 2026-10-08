@@ -134,6 +134,14 @@ export const MESSAGES = {
     UNAUTHORIZED: 'You are not authorized to access admin resources.',
   },
 
+  MAILS: {
+    SEND_SUCCESS: 'Emails sent successfully.',
+    SEND_PARTIAL: 'Some emails could not be sent.',
+    SEND_FAILED: 'None of the emails could be sent. Please try again in a few minutes.',
+    NO_RECIPIENTS_FOUND: 'None of the selected recipients were found.',
+    VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
+  },
+
   DASHBOARD: {
     KPIS_FETCH_SUCCESS: 'Dashboard KPIs fetched successfully.',
     OVERVIEW_FETCH_SUCCESS: 'Dashboard overview fetched successfully.',

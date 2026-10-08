@@ -37,6 +37,10 @@ export function findMemberById(id) {
   return Member.findById(id).lean();
 }
 
+export function findMembersByIds(ids) {
+  return Member.find({ _id: { $in: ids } }, { name: 1, email: 1 }).lean();
+}
+
 export function insertMembers(rows, session) {
   return Member.insertMany(rows, { session });
 }
