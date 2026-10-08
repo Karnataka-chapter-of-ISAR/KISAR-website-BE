@@ -66,7 +66,10 @@ registrationSchema.index(
   { eventId: 1, email: 1 },
   { unique: true, partialFilterExpression: { isActive: true } },
 );
-registrationSchema.index({ 'payment.orderId': 1 }, { unique: true, sparse: true });
-registrationSchema.index({ 'refund.refundId': 1 }, { unique: true, sparse: true });
+// These fields default to null on every document, and a sparse index still indexes
+// null — so a plain unique+sparse index would reject the second registration.
+// Index only documents where the id is actually set.
+registrationSchema.index({ 'payment.orderId': 1 }, { unique: true, partialFilterExpression: { 'payment.orderId': { $type: 'string' } } });
+registrationSchema.index({ 'refund.refundId': 1 }, { unique: true, partialFilterExpression: { 'refund.refundId': { $type: 'string' } } });
 
 export default mongoose.model('Registration', registrationSchema);
