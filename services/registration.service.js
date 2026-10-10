@@ -2,12 +2,14 @@ import mongoose from 'mongoose';
 import * as eventRepository from '../repositories/event.repository.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as registrationRepository from '../repositories/registration.repository.js';
+import * as counterRepository from '../repositories/counter.repository.js';
 import { validateRegistrationAnswers, normalisePhone } from '../dto/events/registerForEvent.request.dto.js';
 import { sendRegistrationConfirmationEmail } from './notifications.service.js';
 import { initiateRefund, handleRefundWebhook } from './refund.service.js';
 import { readRegistrationToken } from '../utils/registrationToken.js';
 import * as cashfree from '../utils/cashfree.js';
 import { startOfToday } from '../utils/date.js';
+import { calculateGst, roundMoney, financialYear, formatInvoiceNumber } from '../utils/gst.js';
 import { AppError } from '../utils/AppError.js';
 import logger from '../utils/logger.js';
 import { MESSAGES } from '../constants/messages.js';
@@ -36,9 +38,12 @@ export async function getRegistrableEvent(eventId) {
 // schema defaults) and keep their original behaviour: members only.
 export const isMembersOnly = (event) => (event.accessType ?? 'members_only') === 'members_only';
 
+// The event's price is the entry fee; 9% CGST + 9% SGST is charged on top of it.
 function priceFor(event, isMember) {
-  if (!event.pricing?.isPaid) return 0;
-  return isMember ? event.pricing.memberPrice : event.pricing.nonMemberPrice;
+  if (!event.pricing?.isPaid) return { baseAmount: 0, cgst: null, sgst: null, totalAmount: 0 };
+
+  const entryFee = isMember ? event.pricing.memberPrice : event.pricing.nonMemberPrice;
+  return calculateGst(entryFee);
 }
 
 // Who is registering is established by the session (logged-in member) or by a
@@ -81,12 +86,12 @@ function toPaymentInfo(registration) {
 // registration pending -> confirmed gets a document back (and sends the email),
 // so webhook retries and the status poll racing the webhook are harmless.
 async function finalizePaidOrder({ registration, orderId, cfPaymentId, paidAmount }) {
-  if (paidAmount !== registration.amount) {
+  if (roundMoney(paidAmount) !== roundMoney(registration.amount)) {
     logger.error(`[registration] amount mismatch for order ${orderId}: paid ${paidAmount}, expected ${registration.amount}`);
     return null;
   }
 
-  const confirmed = await registrationRepository.confirmPendingRegistration(registration._id, { orderId, cfPaymentId });
+  let confirmed = await registrationRepository.confirmPendingRegistration(registration._id, { orderId, cfPaymentId });
   if (!confirmed) return null;
 
   const event = await eventRepository.findEventById(confirmed.eventId);
@@ -99,8 +104,26 @@ async function finalizePaidOrder({ registration, orderId, cfPaymentId, paidAmoun
     return confirmed;
   }
 
+  confirmed = await issueInvoiceNumber(confirmed);
   await sendRegistrationConfirmationEmail({ registration: confirmed, event });
   return confirmed;
+}
+
+// Only registrations charged with GST get an invoice (free ones, and paid ones
+// from before GST was introduced, have no tax breakdown). Never throws: a
+// numbering failure must not undo a confirmed payment.
+async function issueInvoiceNumber(registration) {
+  if (registration.amount <= 0 || registration.baseAmount == null) return registration;
+
+  try {
+    const fy = financialYear(registration.payment.paidAt ?? new Date());
+    const seq = await counterRepository.reserveSequenceRange(`invoice-${fy}`, 1);
+    const withInvoice = await registrationRepository.setInvoice(registration._id, { number: formatInvoiceNumber(fy, seq) });
+    return withInvoice ?? registration;
+  } catch (err) {
+    logger.error(`[registration] could not assign invoice number for ${registration._id}: ${err.message}`);
+    return registration;
+  }
 }
 
 // Guarantees at most one live Cashfree order per registration: a retry reuses
@@ -223,7 +246,7 @@ export async function registerForEvent({ eventId, body, user }) {
   const existing = await registrationRepository.findActiveRegistration({ eventId: event._id, email });
   if (existing?.status === CONFIRMED) throw new AppError(MESSAGES.EVENTS.ALREADY_REGISTERED, 409);
 
-  const amount = priceFor(event, Boolean(member));
+  const { baseAmount, cgst, sgst, totalAmount: amount } = priceFor(event, Boolean(member));
   const details = {
     memberId: member?._id ?? null,
     isMember: Boolean(member),
@@ -233,6 +256,9 @@ export async function registerForEvent({ eventId, body, user }) {
     isarMemberId: member?.ISARMemberID ?? null,
     answers,
     amount,
+    baseAmount: amount > 0 ? baseAmount : null,
+    cgst,
+    sgst,
     currency: EVENT_CURRENCY,
   };
 

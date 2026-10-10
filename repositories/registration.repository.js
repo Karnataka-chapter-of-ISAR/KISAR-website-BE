@@ -56,6 +56,15 @@ export function confirmPendingRegistration(registrationId, { orderId, cfPaymentI
   );
 }
 
+// Assigns the invoice number once; resolves null if one is already set.
+export function setInvoice(registrationId, { number }) {
+  return Registration.findOneAndUpdate(
+    { _id: registrationId, 'invoice.number': null },
+    { $set: { 'invoice.number': number, 'invoice.issuedAt': new Date() } },
+    { new: true },
+  );
+}
+
 export function addDuplicatePayment(registrationId, entry) {
   return Registration.findByIdAndUpdate(
     registrationId,

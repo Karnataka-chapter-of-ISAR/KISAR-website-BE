@@ -1,3 +1,4 @@
+import { cgstRatePercent, sgstRatePercent } from '../../utils/gst.js';
 import { escapeHtml, portalUrl, renderButton, renderLayout } from './layout.js';
 
 const MUTED = '#756c74';
@@ -27,8 +28,9 @@ function renderDetails(rows) {
 
 // `registration` is a Registration document (needs eventTitle/eventDate/name/amount/currency/payment);
 // `event` supplies the time and location, which aren't snapshotted on the registration.
-export function renderRegistrationConfirmation({ registration, event }) {
+export function renderRegistrationConfirmation({ registration, event, hasInvoice = false }) {
   const paid = registration.amount > 0;
+  const hasGst = paid && registration.baseAmount != null;
   const subject = `You're registered: ${registration.eventTitle}`;
 
   const rows = [
@@ -37,18 +39,27 @@ export function renderRegistrationConfirmation({ registration, event }) {
     ...(event?.time ? [['Time', event.time]] : []),
     ...(event?.location ? [['Location', event.location]] : []),
     ['Registered as', `${registration.name} (${registration.email})`],
+    ...(hasGst
+      ? [
+        ['Entry fee', formatAmount(registration.baseAmount, registration.currency)],
+        [`CGST (${cgstRatePercent()}%)`, formatAmount(registration.cgst, registration.currency)],
+        [`SGST (${sgstRatePercent()}%)`, formatAmount(registration.sgst, registration.currency)],
+      ]
+      : []),
     ...(paid
       ? [
         ['Amount paid', formatAmount(registration.amount, registration.currency)],
         ['Order ID', registration.payment?.orderId ?? '—'],
       ]
       : []),
+    ...(hasInvoice ? [['Invoice no.', registration.invoice.number]] : []),
   ];
 
   const bodyHtml = `
     <p style="margin:0 0 16px;">Hello ${escapeHtml(registration.name)},</p>
     <p style="margin:0 0 20px;">${paid ? 'Your payment was received and your registration is confirmed.' : 'Your registration is confirmed.'} Here are your details:</p>
     ${renderDetails(rows)}
+    ${hasInvoice ? `<p style="margin:20px 0 0;">Your GST tax invoice is attached to this email as a PDF.</p>` : ''}
     ${renderButton('View events →', `${portalUrl()}/events`)}
     <p style="margin:0 0 22px;color:${MUTED};">Registrations cannot be cancelled online. If something looks wrong, write to info@kisar.org.in.</p>
     <p style="margin:0 0 22px;color:${MUTED};">— KISAR</p>`;
@@ -68,6 +79,7 @@ export function renderRegistrationConfirmation({ registration, event }) {
     '',
     ...rows.map(([label, value]) => `${label}: ${value}`),
     '',
+    ...(hasInvoice ? ['Your GST tax invoice is attached to this email as a PDF.', ''] : []),
     'Registrations cannot be cancelled online. If something looks wrong, write to info@kisar.org.in.',
     '',
     '- KISAR',

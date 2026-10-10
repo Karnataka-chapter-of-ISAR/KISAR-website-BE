@@ -33,8 +33,17 @@ const registrationSchema = new mongoose.Schema(
     // letting a later state (e.g. refunded) free the email up.
     isActive:     { type: Boolean, default: true },
 
+    // `amount` is what the person pays (entry fee + GST). The breakdown is null
+    // for free registrations and for ones made before GST was introduced.
     amount:       { type: Number, required: true, min: 0, default: 0 },
+    baseAmount:   { type: Number, min: 0, default: null },
+    cgst:         { type: Number, min: 0, default: null },
+    sgst:         { type: Number, min: 0, default: null },
     currency:     { type: String, default: EVENT_CURRENCY },
+    invoice: {
+      number:   { type: String, default: null },
+      issuedAt: { type: Date, default: null },
+    },
     payment: {
       orderId:          { type: String, default: null },
       attempt:          { type: Number, default: 0 },
@@ -71,5 +80,6 @@ registrationSchema.index(
 // Index only documents where the id is actually set.
 registrationSchema.index({ 'payment.orderId': 1 }, { unique: true, partialFilterExpression: { 'payment.orderId': { $type: 'string' } } });
 registrationSchema.index({ 'refund.refundId': 1 }, { unique: true, partialFilterExpression: { 'refund.refundId': { $type: 'string' } } });
+registrationSchema.index({ 'invoice.number': 1 }, { unique: true, partialFilterExpression: { 'invoice.number': { $type: 'string' } } });
 
 export default mongoose.model('Registration', registrationSchema);

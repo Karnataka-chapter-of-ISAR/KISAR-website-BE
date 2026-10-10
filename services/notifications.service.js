@@ -1,5 +1,6 @@
 import logger from '../utils/logger.js';
 import { sendEmail } from '../utils/mailer.js';
+import { generateInvoicePdf } from '../utils/invoicePdf.js';
 import { renderWelcome } from '../templates/emails/welcome.js';
 import { renderRegistrationConfirmation } from '../templates/emails/registrationConfirmation.js';
 import { renderRefundInitiated, renderEventCancelled } from '../templates/emails/registrationRefund.js';
@@ -15,11 +16,27 @@ export async function sendWelcomeEmail(member) {
   }
 }
 
+// The GST invoice accompanies paid registrations that have one; if it can't be
+// generated the confirmation still goes out without it.
+async function buildInvoiceAttachments(registration) {
+  if (!registration.invoice?.number) return [];
+
+  try {
+    const content = await generateInvoicePdf({ registration });
+    const filename = `Invoice-${registration.invoice.number.replace(/\//g, '-')}.pdf`;
+    return [{ filename, content, contentType: 'application/pdf' }];
+  } catch (err) {
+    logger.error(`[sendRegistrationConfirmationEmail] invoice PDF failed for ${registration.email}: ${err.message}`);
+    return [];
+  }
+}
+
 // Never throws: a failed confirmation email must not undo a confirmed registration.
 export async function sendRegistrationConfirmationEmail({ registration, event }) {
   try {
-    const { subject, html, text } = renderRegistrationConfirmation({ registration, event });
-    await sendEmail({ to: registration.email, subject, html, text });
+    const attachments = await buildInvoiceAttachments(registration);
+    const { subject, html, text } = renderRegistrationConfirmation({ registration, event, hasInvoice: attachments.length > 0 });
+    await sendEmail({ to: registration.email, subject, html, text, attachments });
     logger.info(`[sendRegistrationConfirmationEmail] sent to ${registration.email} for event ${registration.eventId}`);
   } catch (err) {
     logger.error(`[sendRegistrationConfirmationEmail] failed for ${registration.email}: ${err.message}`);
