@@ -9,7 +9,7 @@ import { initiateRefund, handleRefundWebhook } from './refund.service.js';
 import { readRegistrationToken } from '../utils/registrationToken.js';
 import * as cashfree from '../utils/cashfree.js';
 import { startOfToday } from '../utils/date.js';
-import { calculateGst, roundMoney, financialYear, formatInvoiceNumber } from '../utils/gst.js';
+import { calculateGst, toChargesDto, roundMoney, financialYear, formatInvoiceNumber } from '../utils/gst.js';
 import { AppError } from '../utils/AppError.js';
 import logger from '../utils/logger.js';
 import { MESSAGES } from '../constants/messages.js';
@@ -330,6 +330,9 @@ export async function getRegistrationStatus(orderId) {
     eventId: fresh.eventId,
     eventTitle: fresh.eventTitle,
     amount: fresh.amount,
+    totalAmount: fresh.amount,
+    charges: toChargesDto(fresh),
+    invoiceNumber: fresh.invoice?.number ?? null,
   };
 }
 

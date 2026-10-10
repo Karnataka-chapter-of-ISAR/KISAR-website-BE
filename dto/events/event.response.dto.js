@@ -1,3 +1,7 @@
+import { calculateGst, cgstRatePercent, sgstRatePercent } from '../../utils/gst.js';
+
+const withGst = (price) => (price == null ? null : calculateGst(price));
+
 export function toEventResponseDto(event) {
   const obj = typeof event.toObject === 'function' ? event.toObject() : event;
   // `registeredMembers` / `capacity` are legacy fields on old documents: the
@@ -15,6 +19,10 @@ export function toEventResponseDto(event) {
       memberPrice: rest.pricing?.memberPrice ?? null,
       nonMemberPrice: rest.pricing?.nonMemberPrice ?? null,
       currency: rest.pricing?.currency ?? 'INR',
+      cgstRate: cgstRatePercent(),
+      sgstRate: sgstRatePercent(),
+      memberCharges: rest.pricing?.isPaid ? withGst(rest.pricing.memberPrice) : null,
+      nonMemberCharges: rest.pricing?.isPaid ? withGst(rest.pricing.nonMemberPrice) : null,
     },
     registrationFields: rest.registrationFields ?? [],
   };

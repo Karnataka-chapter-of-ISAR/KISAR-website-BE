@@ -1,3 +1,5 @@
+import { toChargesDto } from '../../utils/gst.js';
+
 export function toRegistrationResponseDto(registration) {
   return {
     id:         registration._id,
@@ -5,6 +7,12 @@ export function toRegistrationResponseDto(registration) {
     eventTitle: registration.eventTitle,
     status:     registration.status,
     amount:     registration.amount,
+    baseAmount: registration.baseAmount ?? null,
+    cgst:       registration.cgst ?? null,
+    sgst:       registration.sgst ?? null,
+    totalAmount: registration.amount,
+    charges:    toChargesDto(registration),
+    invoiceNumber: registration.invoice?.number ?? null,
     currency:   registration.currency,
     isMember:   registration.isMember,
     name:       registration.name,

@@ -43,3 +43,17 @@ export function financialYear(date) {
 }
 
 export const formatInvoiceNumber = (fy, seq) => `KISAR/${fy}/${String(seq).padStart(4, '0')}`;
+
+// API-facing breakdown of what a registration was charged. Null amounts for
+// free registrations and ones made before GST was introduced.
+export function toChargesDto(registration) {
+  const hasGst = registration.amount > 0 && registration.baseAmount != null;
+  return {
+    baseAmount: hasGst ? registration.baseAmount : null,
+    cgstRate: hasGst ? cgstRatePercent() : null,
+    cgst: hasGst ? registration.cgst : null,
+    sgstRate: hasGst ? sgstRatePercent() : null,
+    sgst: hasGst ? registration.sgst : null,
+    totalAmount: registration.amount,
+  };
+}
