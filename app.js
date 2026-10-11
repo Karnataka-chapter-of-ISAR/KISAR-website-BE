@@ -72,11 +72,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", 'https://maps.googleapis.com', 'https://maps.gstatic.com'],
+      scriptSrc: ["'self'", 'https://maps.googleapis.com', 'https://maps.gstatic.com', 'https://sdk.cashfree.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleapis.com', 'https://*.gstatic.com', 'https://*.ggpht.com', s3Origin],
-      connectSrc: ["'self'", 'https://maps.googleapis.com'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleapis.com', 'https://*.gstatic.com', 'https://*.ggpht.com', 'https://*.cashfree.com', s3Origin],
+      connectSrc: ["'self'", 'https://maps.googleapis.com', 'https://*.cashfree.com'],
+      // Cashfree.js (payments) opens its checkout in a frame and loads its assets from *.cashfree.com.
+      frameSrc: ["'self'", 'https://*.cashfree.com'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
