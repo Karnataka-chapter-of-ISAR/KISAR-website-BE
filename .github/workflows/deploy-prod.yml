@@ -46,4 +46,7 @@ jobs:
           region: ${{ inputs.region || 'ap-south-1' }}
           version_label: ${{ github.ref_name }}-${{ github.run_number }}-${{ github.sha }}
           deployment_package: deploy.zip
+          # A re-run of a failed job reuses the same run number and sha, so the
+          # version label already exists in EB from the earlier attempt.
+          use_existing_version_if_available: true
           wait_for_environment_recovery: 300
