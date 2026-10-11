@@ -3,7 +3,9 @@ import { MESSAGES } from '../constants/messages.js';
 import * as adminRepository from '../repositories/admin.repository.js';
 import logger from '../utils/logger.js';
 
-const NETLIFY_IDENTITY_USER_URL = 'https://kisar-admin.netlify.app/.netlify/identity/user';
+// Must be the Identity endpoint of the Netlify site that serves the admin UI
+// (tokens are only valid against the site that issued them).
+const NETLIFY_IDENTITY_USER_URL = process.env.NETLIFY_IDENTITY_URL || 'https://kisaradmin.netlify.app/.netlify/identity/user';
 
 // Verifies the admin access token against Netlify Identity, then checks the
 // returned email against our own Admin collection — Netlify only proves who
