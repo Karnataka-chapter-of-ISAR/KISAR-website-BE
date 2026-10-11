@@ -81,7 +81,8 @@ app.use(helmet({
       frameSrc: ["'self'", 'https://*.cashfree.com'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
-      formAction: ["'self'"],
+      // Cashfree's redirect checkout POSTs the payment session to *.cashfree.com.
+      formAction: ["'self'", 'https://*.cashfree.com'],
       frameAncestors: ["'self'"],
       upgradeInsecureRequests: [],
     },
