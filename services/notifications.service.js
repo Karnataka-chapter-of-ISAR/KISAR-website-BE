@@ -2,6 +2,7 @@ import logger from '../utils/logger.js';
 import { sendEmail } from '../utils/mailer.js';
 import { generateInvoicePdf } from '../utils/invoicePdf.js';
 import { renderWelcome } from '../templates/emails/welcome.js';
+import { renderAdminAdded } from '../templates/emails/adminAdded.js';
 import { renderRegistrationConfirmation } from '../templates/emails/registrationConfirmation.js';
 import { renderRefundInitiated, renderEventCancelled } from '../templates/emails/registrationRefund.js';
 
@@ -13,6 +14,19 @@ export async function sendWelcomeEmail(member) {
     logger.info(`[sendWelcomeEmail] sent welcome email to ${member.email}`);
   } catch (err) {
     logger.error(`[sendWelcomeEmail] failed for ${member.email}: ${err.message}`);
+  }
+}
+
+// Never throws: the admin is already created, so a failed notification must not fail the request.
+export async function sendAdminAddedEmail({ name, email, addedBy }) {
+  try {
+    const { subject, html, text } = renderAdminAdded({ name, addedBy });
+    await sendEmail({ to: email, subject, html, text });
+    logger.info(`[sendAdminAddedEmail] sent admin notification to ${email}`);
+    return true;
+  } catch (err) {
+    logger.error(`[sendAdminAddedEmail] failed for ${email}: ${err.message}`);
+    return false;
   }
 }
 

@@ -132,6 +132,11 @@ export const MESSAGES = {
   ADMIN: {
     TOKEN_MISSING: 'Admin access token is missing. Please log in again.',
     UNAUTHORIZED: 'You are not authorized to access admin resources.',
+    VALIDATION_ERROR: 'Please correct the highlighted fields.',
+    CREATE_SUCCESS: 'Admin user added successfully. A notification email has been sent.',
+    LIST_SUCCESS: 'Admin users fetched successfully.',
+    EMAIL_ALREADY_EXISTS: 'An admin with this email already exists.',
+    OTP_SENT_IF_ADMIN: 'If this email belongs to an administrator, a verification code has been sent.',
   },
 
   MAILS: {

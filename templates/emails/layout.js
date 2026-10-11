@@ -10,6 +10,7 @@ const SANS_FONT = "'Libre Franklin', Arial, Helvetica, sans-serif";
 const HEADER_HEIGHT = 250;
 
 export const portalUrl = () => process.env.PORTAL_URL || 'https://www.kisar.org.in';
+export const adminPortalUrl = () => process.env.ADMIN_PORTAL_URL || 'https://kisaradmin.netlify.app';
 const assetBase = () => process.env.EMAIL_ASSET_BASE_URL || `${portalUrl()}/email`;
 
 export function escapeHtml(value = '') {

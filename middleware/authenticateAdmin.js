@@ -14,7 +14,10 @@ export async function authenticateAdmin(req, res, next) {
   }
 
   try {
-    req.admin = await verifyAdminAccessToken(token);
+    const { admin, payload } = await verifyAdminAccessToken(token);
+    req.admin = admin;
+    req.token = token;
+    req.tokenExp = payload.exp;
     next();
   } catch (err) {
     if (err instanceof AppError) {
