@@ -8,7 +8,7 @@ import { sendRegistrationConfirmationEmail } from './notifications.service.js';
 import { initiateRefund, handleRefundWebhook } from './refund.service.js';
 import { readRegistrationToken } from '../utils/registrationToken.js';
 import * as cashfree from '../utils/cashfree.js';
-import { startOfToday } from '../utils/date.js';
+import { startOfToday, eventEndDate } from '../utils/date.js';
 import { calculateGst, toChargesDto, roundMoney, financialYear, formatInvoiceNumber } from '../utils/gst.js';
 import { AppError } from '../utils/AppError.js';
 import logger from '../utils/logger.js';
@@ -28,8 +28,9 @@ export async function getRegistrableEvent(eventId) {
 
   const event = await eventRepository.findEventById(eventId);
   if (!event) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
-  if (new Date(event.date) < startOfToday()) throw new AppError(MESSAGES.REGISTRATION.EVENT_CLOSED, 400);
+  if (new Date(eventEndDate(event)) < startOfToday()) throw new AppError(MESSAGES.REGISTRATION.EVENT_CLOSED, 400);
   if (event.registrationsClosed) throw new AppError(MESSAGES.REGISTRATION.REGISTRATIONS_CLOSED, 400);
+  if (event.registrationLink) throw new AppError(MESSAGES.REGISTRATION.EXTERNAL_REGISTRATION, 400);
 
   return event;
 }
@@ -268,6 +269,7 @@ export async function registerForEvent({ eventId, body, user }) {
       eventId: event._id,
       eventTitle: event.title,
       eventDate: event.date,
+      eventEndDate: eventEndDate(event),
       status: CONFIRMED,
     });
     if (!registration) throw new AppError(MESSAGES.EVENTS.ALREADY_REGISTERED, 409);
@@ -285,6 +287,7 @@ export async function registerForEvent({ eventId, body, user }) {
       eventId: event._id,
       eventTitle: event.title,
       eventDate: event.date,
+      eventEndDate: eventEndDate(event),
       status: REGISTRATION_STATUS.PENDING_PAYMENT,
     });
     // Lost a race with a concurrent submit for the same email — pick up that row.

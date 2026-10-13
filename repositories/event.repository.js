@@ -2,8 +2,12 @@ import Event from '../models/Event.js';
 import { EVENT_SEARCHABLE_STRING_FIELDS } from '../constants/events.js';
 import { escapeRegex } from '../utils/regex.js';
 
+// Events without `endDate` (legacy / single-day) end on their start date.
+const endsOnOrAfter = (date) => ({ $or: [{ endDate: { $gte: date } }, { endDate: null, date: { $gte: date } }] });
+const endedBefore = (date) => ({ $or: [{ endDate: { $lt: date } }, { endDate: null, date: { $lt: date } }] });
+
 // Case-insensitive substring match across every searchable string field, plus
-// a same-day match on `date` when the term parses as a date (e.g. "2026-08-14").
+// a match on events running on that day when the term parses as a date (e.g. "2026-08-14").
 function buildEventSearchFilter(search) {
   if (!search || !search.trim()) return {};
 
@@ -17,7 +21,7 @@ function buildEventSearchFilter(search) {
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(startOfDay);
     endOfDay.setDate(endOfDay.getDate() + 1);
-    or.push({ date: { $gte: startOfDay, $lt: endOfDay } });
+    or.push({ date: { $lt: endOfDay }, ...endsOnOrAfter(startOfDay) });
   }
 
   return { $or: or };
@@ -32,7 +36,7 @@ export function findAllEvents(search) {
 }
 
 export function findHighlightedEvents(fromDate) {
-  return Event.find({ isHighlighted: true, date: { $gte: fromDate } }).sort({ date: 1, time: 1 }).lean();
+  return Event.find({ isHighlighted: true, ...endsOnOrAfter(fromDate) }).sort({ date: 1, time: 1 }).lean();
 }
 
 export function findEventById(eventId) {
@@ -52,13 +56,13 @@ export function closeRegistrations(eventId) {
 }
 
 export function countUpcomingEvents(fromDate) {
-  return Event.countDocuments({ date: { $gte: fromDate } });
+  return Event.countDocuments(endsOnOrAfter(fromDate));
 }
 
 export function countPastEvents(beforeDate) {
-  return Event.countDocuments({ date: { $lt: beforeDate } });
+  return Event.countDocuments(endedBefore(beforeDate));
 }
 
 export function findNextEvent(fromDate) {
-  return Event.findOne({ date: { $gte: fromDate } }).sort({ date: 1, time: 1 }).lean();
+  return Event.findOne(endsOnOrAfter(fromDate)).sort({ date: 1, time: 1 }).lean();
 }

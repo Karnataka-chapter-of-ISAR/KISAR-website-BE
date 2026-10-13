@@ -12,6 +12,10 @@ export function toEventResponseDto(event) {
     registeredCount: rest.registeredCount ?? 0,
     isHighlighted: Boolean(rest.isHighlighted),
     ...rest,
+    // Single-day events (and legacy documents) report endDate = date.
+    endDate: rest.endDate ?? rest.date,
+    registrationLink: rest.registrationLink ?? null,
+    time: rest.time ?? null,
     images: rest.images ?? [],
     accessType: rest.accessType ?? 'members_only',
     pricing: {

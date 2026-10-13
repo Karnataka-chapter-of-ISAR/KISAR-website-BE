@@ -106,6 +106,21 @@ export function validateRegistrationAnswers(fields, rawAnswers, errors) {
   const answers = [];
   for (const field of fields) {
     const raw = rawAnswers[field.key];
+
+    // A checkbox always has an answer: unticked/omitted is `false`, and a required one must be ticked.
+    if (field.type === 'checkbox') {
+      const checked = raw === true || raw === 'true';
+      const isBoolean = raw === undefined || raw === null || raw === '' || typeof raw === 'boolean' || raw === 'true' || raw === 'false';
+      if (!isBoolean) {
+        errors.push(`${field.label} must be true or false.`);
+      } else if (field.required && !checked) {
+        errors.push(`${field.label} must be checked.`);
+      } else {
+        answers.push({ key: field.key, label: field.label, type: field.type, value: checked });
+      }
+      continue;
+    }
+
     const isEmpty = raw === undefined || raw === null || String(raw).trim() === '';
 
     if (isEmpty) {

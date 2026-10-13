@@ -3,6 +3,16 @@ import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
 const LINK_LABEL_MAX_LENGTH = 50;
 const LOCKED_FIELDS = ['accessType', 'pricing', 'registrationFields'];
 
+// Users are redirected to this link, so only web URLs are accepted.
+function isHttpUrl(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    return ['http:', 'https:'].includes(new URL(value.trim()).protocol);
+  } catch {
+    return false;
+  }
+}
+
 // `images` arrives as a real array in a JSON body, or as a single field in
 // multipart/form-data — either a JSON-encoded array string or one bare URL.
 function parseImages(images) {
@@ -24,7 +34,7 @@ function parseImages(images) {
 export function validateUpdateEventRequest(body = {}) {
   const errors = [];
   const data = {};
-  const { title, type, date, time, location, link, linkLabel, isHighlighted, images } = body;
+  const { title, type, date, endDate, time, location, link, linkLabel, registrationLink, isHighlighted, images } = body;
 
   // Fixed once the event is created: attendees register (and pay) against these.
   const lockedFields = LOCKED_FIELDS.filter((field) => body[field] !== undefined);
@@ -57,8 +67,26 @@ export function validateUpdateEventRequest(body = {}) {
     }
   }
 
+  // null / empty resets the event to a single day. Ordering against the start
+  // date is checked in the service, which knows the stored value.
+  if (endDate !== undefined) {
+    if (!endDate) {
+      data.endDate = null;
+    } else {
+      const parsedEndDate = new Date(endDate);
+      if (Number.isNaN(parsedEndDate.getTime())) {
+        errors.push('End date must be a valid date.');
+      } else {
+        data.endDate = parsedEndDate;
+      }
+    }
+  }
+
   if (time !== undefined) {
-    if (!time || !TIME_FORMAT_REGEX.test(time)) {
+    // Empty value clears the optional time.
+    if (!time) {
+      data.time = null;
+    } else if (!TIME_FORMAT_REGEX.test(time)) {
       errors.push('Time must be in HH:mm format.');
     } else {
       data.time = time;
@@ -70,6 +98,17 @@ export function validateUpdateEventRequest(body = {}) {
       errors.push('Location must be a non-empty string.');
     } else {
       data.location = location.trim();
+    }
+  }
+
+  // Empty value clears the link, switching the event back to on-site registration.
+  if (registrationLink !== undefined) {
+    if (!registrationLink) {
+      data.registrationLink = null;
+    } else if (!isHttpUrl(registrationLink)) {
+      errors.push('Registration link must be a valid http(s) URL.');
+    } else {
+      data.registrationLink = registrationLink.trim();
     }
   }
 

@@ -13,7 +13,7 @@ export const EVENT_ACCESS_TYPES = ['open', 'members_only'];
 export const EVENT_CURRENCY = 'INR';
 
 // Admin-defined registration form fields (on top of the fixed basic fields).
-export const REGISTRATION_FIELD_TYPES = ['text', 'textarea', 'number', 'email', 'phone'];
+export const REGISTRATION_FIELD_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'checkbox'];
 export const REGISTRATION_FIELDS_MAX = 15;
 export const REGISTRATION_FIELD_LABEL_MAX = 60;
 export const REGISTRATION_FIELD_PLACEHOLDER_MAX = 100;

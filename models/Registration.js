@@ -18,6 +18,7 @@ const registrationSchema = new mongoose.Schema(
     // event's title/date are snapshotted here.
     eventTitle:   { type: String, required: true, trim: true },
     eventDate:    { type: Date, required: true },
+    eventEndDate: { type: Date, default: null },
 
     memberId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Member', default: null },
     isMember:     { type: Boolean, required: true },

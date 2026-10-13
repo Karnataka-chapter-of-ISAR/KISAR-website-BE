@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { cgstRatePercent, sgstRatePercent, INVOICE_SAC_CODE } from './gst.js';
+import { formatDateRange } from './date.js';
 
 const BRAND = '#982078';
 const INK = '#221a20';
@@ -90,7 +91,7 @@ export function generateInvoicePdf({ registration }) {
     doc.text(money(registration.baseAmount), columns[2].x + 8, rowY, { width: columns[2].width - 16, align: 'right' });
 
     doc.font('Helvetica').fontSize(9).fillColor(MUTED)
-      .text(`Event date: ${formatDate(registration.eventDate)}`, columns[0].x + 8, descriptionBottom + 2, { width: columns[0].width - 16 });
+      .text(`Event date: ${formatDateRange(registration.eventDate, registration.eventEndDate)}`, columns[0].x + 8, descriptionBottom + 2, { width: columns[0].width - 16 });
 
     // Totals
     const totalsX = MARGIN + PAGE_WIDTH * 0.5;

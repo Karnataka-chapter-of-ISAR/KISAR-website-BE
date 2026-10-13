@@ -9,6 +9,13 @@ const formatDate = (date) => new Date(date).toLocaleDateString('en-IN', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
 });
 
+// Multi-day events show "<start> to <end>"; legacy registrations have no end date.
+const formatEventDates = (start, end) => {
+  const from = formatDate(start);
+  const till = end ? formatDate(end) : from;
+  return till === from ? from : `${from} to ${till}`;
+};
+
 const formatAmount = (amount, currency) => (currency === 'INR' ? `₹${amount}` : `${amount} ${currency}`);
 
 function renderDetails(rows) {
@@ -35,7 +42,7 @@ export function renderRegistrationConfirmation({ registration, event, hasInvoice
 
   const rows = [
     ['Event', registration.eventTitle],
-    ['Date', formatDate(registration.eventDate)],
+    [registration.eventEndDate ? 'Dates' : 'Date', formatEventDates(registration.eventDate, registration.eventEndDate)],
     ...(event?.time ? [['Time', event.time]] : []),
     ...(event?.location ? [['Location', event.location]] : []),
     ['Registered as', `${registration.name} (${registration.email})`],

@@ -78,6 +78,7 @@ export const MESSAGES = {
     ALREADY_REGISTERED: 'You are already registered for this event.',
     ATTENDEES_FETCH_SUCCESS: 'Attendees fetched successfully.',
     PAST_EVENT_NOT_DELETABLE: 'Past events cannot be deleted.',
+    END_DATE_BEFORE_START: 'End date cannot be before the start date.',
     PAID_REGISTRATIONS_EXIST: 'This event still has paid registrations that must be refunded before it can be deleted.',
   },
 
@@ -88,6 +89,7 @@ export const MESSAGES = {
     MEMBERS_ONLY: 'This event is open to KISAR members only.',
     EVENT_CLOSED: 'Registration is closed because this event has already taken place.',
     REGISTRATIONS_CLOSED: 'Registration for this event is closed.',
+    EXTERNAL_REGISTRATION: 'Registration for this event happens on an external site. Please use the registration link.',
     REGISTERED: 'You have been registered for this event.',
     PAYMENT_REQUIRED: 'Registration saved. Complete the payment to confirm your seat.',
     STATUS_FETCH_SUCCESS: 'Registration status fetched successfully.',

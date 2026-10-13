@@ -3,7 +3,7 @@ import * as eventRepository from '../repositories/event.repository.js';
 import * as registrationRepository from '../repositories/registration.repository.js';
 import { sendRefundInitiatedEmail, sendEventCancelledEmail } from './notifications.service.js';
 import * as cashfree from '../utils/cashfree.js';
-import { startOfToday } from '../utils/date.js';
+import { startOfToday, eventEndDate } from '../utils/date.js';
 import { AppError } from '../utils/AppError.js';
 import logger from '../utils/logger.js';
 import { MESSAGES } from '../constants/messages.js';
@@ -118,7 +118,7 @@ export async function getEventRefundSummary({ eventId, sync = false }) {
 // refunds have started. Safe to run again — it only retries what isn't refunded.
 export async function initiateEventRefunds({ eventId }) {
   const event = await loadEvent(eventId);
-  if (new Date(event.date) < startOfToday()) throw new AppError(MESSAGES.REFUNDS.PAST_EVENT, 409);
+  if (new Date(eventEndDate(event)) < startOfToday()) throw new AppError(MESSAGES.REFUNDS.PAST_EVENT, 409);
 
   await eventRepository.closeRegistrations(eventId);
 

@@ -22,11 +22,15 @@ const eventSchema = new mongoose.Schema(
   {
     title:       { type: String, required: true, trim: true },
     type:        { type: String, required: true, enum: EVENT_TYPES },
+    // `date` is the first day; `endDate` the last (same as `date` for single-day events).
     date:        { type: Date, required: true },
-    time:        { type: String, required: true, match: TIME_FORMAT_REGEX },
+    endDate:     { type: Date, default: null },
+    time:        { type: String, default: null, match: TIME_FORMAT_REGEX },
     location:    { type: String, required: true, trim: true },
     link:        { type: String, trim: true, default: null },
     linkLabel:   { type: String, trim: true, default: 'Meeting Link' },
+    // When set, registration happens off-site: "Register" redirects here instead of using our flow.
+    registrationLink: { type: String, trim: true, default: null },
     bannerImage: { type: String, trim: true, default: null },
     images:      { type: [String], default: [] },
     isHighlighted: { type: Boolean, default: false },

@@ -5,8 +5,8 @@ function toNextEventDto(event) {
     id: event._id,
     title: event.title,
     date: event.date.toISOString().slice(0, 10),
-    time: event.time,
-    location: event.location,
+    endDate: (event.endDate ?? event.date).toISOString().slice(0, 10),
+    time: event.time,    location: event.location,
   };
 }
 

@@ -3,6 +3,16 @@ import { validateAccessType, validatePricing, validateRegistrationFields } from 
 
 const LINK_LABEL_MAX_LENGTH = 50;
 
+// Users are redirected to this link, so only web URLs are accepted.
+function isHttpUrl(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    return ['http:', 'https:'].includes(new URL(value.trim()).protocol);
+  } catch {
+    return false;
+  }
+}
+
 // `images` arrives as a real array in a JSON body, or as a single field in
 // multipart/form-data — either a JSON-encoded array string or one bare URL.
 function parseImages(images) {
@@ -24,7 +34,7 @@ function parseImages(images) {
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateCreateEventRequest(body = {}) {
   const errors = [];
-  const { title, type, date, time, location, link, linkLabel, isHighlighted, images, accessType, pricing, registrationFields } = body;
+  const { title, type, date, endDate, time, location, link, linkLabel, registrationLink, isHighlighted, images, accessType, pricing, registrationFields } = body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     errors.push('Event title is required.');
@@ -39,8 +49,17 @@ export function validateCreateEventRequest(body = {}) {
     errors.push('Date is required and must be a valid date.');
   }
 
-  if (!time || !TIME_FORMAT_REGEX.test(time)) {
-    errors.push('Time is required and must be in HH:mm format.');
+  // Optional last day of a multi-day event; omitted means a single-day event.
+  const parsedEndDate = endDate ? new Date(endDate) : parsedDate;
+  if (endDate && Number.isNaN(parsedEndDate.getTime())) {
+    errors.push('End date must be a valid date.');
+  } else if (parsedDate && !Number.isNaN(parsedDate.getTime()) && parsedEndDate < parsedDate) {
+    errors.push('End date cannot be before the start date.');
+  }
+
+  // Time is optional; when given it must be HH:mm.
+  if (time && !TIME_FORMAT_REGEX.test(time)) {
+    errors.push('Time must be in HH:mm format.');
   }
 
   if (!location || typeof location !== 'string' || !location.trim()) {
@@ -53,6 +72,10 @@ export function validateCreateEventRequest(body = {}) {
     } catch {
       errors.push('Link must be a valid URL.');
     }
+  }
+
+  if (registrationLink && !isHttpUrl(registrationLink)) {
+    errors.push('Registration link must be a valid http(s) URL.');
   }
 
   if (linkLabel && (typeof linkLabel !== 'string' || linkLabel.trim().length > LINK_LABEL_MAX_LENGTH)) {
@@ -80,10 +103,12 @@ export function validateCreateEventRequest(body = {}) {
       title: title.trim(),
       type,
       date: parsedDate,
-      time,
+      endDate: parsedEndDate,
+      time: time || null,
       location: location.trim(),
       link: link ? link.trim() : null,
       linkLabel: linkLabel ? linkLabel.trim() : undefined,
+      registrationLink: registrationLink ? registrationLink.trim() : null,
       isHighlighted: parsedIsHighlighted,
       images: parsedImages.map((url) => url.trim()),
       accessType: validAccessType,
