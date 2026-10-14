@@ -2,11 +2,26 @@ import { calculateGst, cgstRatePercent, sgstRatePercent } from '../../utils/gst.
 
 const withGst = (price) => (price == null ? null : calculateGst(price));
 
+const toPricingDto = (pricing) => ({
+  isPaid: Boolean(pricing?.isPaid),
+  memberPrice: pricing?.memberPrice ?? null,
+  nonMemberPrice: pricing?.nonMemberPrice ?? null,
+  currency: pricing?.currency ?? 'INR',
+  cgstRate: cgstRatePercent(),
+  sgstRate: sgstRatePercent(),
+  memberCharges: pricing?.isPaid ? withGst(pricing.memberPrice) : null,
+  nonMemberCharges: pricing?.isPaid ? withGst(pricing.nonMemberPrice) : null,
+});
+
 export function toEventResponseDto(event) {
   const obj = typeof event.toObject === 'function' ? event.toObject() : event;
   // `registeredMembers` / `capacity` are legacy fields on old documents: the
   // former holds member ids (never exposed), the latter is no longer a concept.
-  const { _id, __v, registeredMembers, capacity, ...rest } = obj;
+  const { _id, __v, registeredMembers, capacity, pricing, ...rest } = obj;
+
+  // Events registered through an external link never use our pricing, so none is sent.
+  const pricingDto = rest.registrationLink ? {} : { pricing: toPricingDto(pricing) };
+
   return {
     id: _id,
     registeredCount: rest.registeredCount ?? 0,
@@ -18,16 +33,7 @@ export function toEventResponseDto(event) {
     time: rest.time ?? null,
     images: rest.images ?? [],
     accessType: rest.accessType ?? 'members_only',
-    pricing: {
-      isPaid: Boolean(rest.pricing?.isPaid),
-      memberPrice: rest.pricing?.memberPrice ?? null,
-      nonMemberPrice: rest.pricing?.nonMemberPrice ?? null,
-      currency: rest.pricing?.currency ?? 'INR',
-      cgstRate: cgstRatePercent(),
-      sgstRate: sgstRatePercent(),
-      memberCharges: rest.pricing?.isPaid ? withGst(rest.pricing.memberPrice) : null,
-      nonMemberCharges: rest.pricing?.isPaid ? withGst(rest.pricing.nonMemberPrice) : null,
-    },
+    ...pricingDto,
     registrationFields: rest.registrationFields ?? [],
   };
 }
