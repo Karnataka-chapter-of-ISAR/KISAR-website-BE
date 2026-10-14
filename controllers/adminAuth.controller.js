@@ -4,6 +4,15 @@ import { requestAdminOtp, verifyAdminOtp, logoutAdmin } from '../services/adminA
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
+import { isSuperAdmin } from '../constants/admin.js';
+import { setAdminAuthCookie, setAdminInfoCookies, clearAdminAuthCookie } from '../utils/authCookies.js';
+
+const toAdminInfo = (admin) => ({
+  name: admin.name,
+  email: admin.email,
+  role: 'admin',
+  isSuperAdmin: isSuperAdmin(admin),
+});
 
 export async function sendAdminOtpController(req, res) {
   const { valid, data } = validateSendOtpRequest(req.body);
@@ -26,10 +35,9 @@ export async function verifyAdminOtpController(req, res) {
 
   try {
     const { admin, accessToken } = await verifyAdminOtp(data.email, data.otp);
-    return sendSuccess(res, {
-      message: MESSAGES.AUTH.LOGIN_SUCCESS,
-      data: { accessToken, admin: { name: admin.name, email: admin.email, role: 'admin' } },
-    });
+    setAdminAuthCookie(res, accessToken);
+    setAdminInfoCookies(res, toAdminInfo(admin));
+    return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS });
   } catch (err) {
     if (err instanceof AppError) {
       return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
@@ -38,11 +46,14 @@ export async function verifyAdminOtpController(req, res) {
   }
 }
 
+// Session check: refreshes the readable info cookies from the verified admin record.
 export function getAdminMeController(req, res) {
-  return sendSuccess(res, { data: { name: req.admin.name, email: req.admin.email, role: 'admin' } });
+  setAdminInfoCookies(res, toAdminInfo(req.admin));
+  return sendSuccess(res, {});
 }
 
 export async function logoutAdminController(req, res) {
   await logoutAdmin({ token: req.token, exp: req.tokenExp });
+  clearAdminAuthCookie(res);
   return sendSuccess(res, { message: MESSAGES.AUTH.LOGOUT_SUCCESS });
 }

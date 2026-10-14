@@ -1,14 +1,16 @@
 import { validateCreateAdminRequest } from '../dto/admins/createAdmin.request.dto.js';
-import { createAdmin, listAdmins } from '../services/admin.service.js';
+import { createAdmin, listAdmins, deleteAdmin } from '../services/admin.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { MESSAGES } from '../constants/messages.js';
+import { isSuperAdmin } from '../constants/admin.js';
 
 const toAdminDto = admin => ({
   id: admin._id,
   name: admin.name,
   email: admin.email,
   createdAt: admin.createdAt,
+  isSuperAdmin: isSuperAdmin(admin),
 });
 
 export async function listAdminsController(req, res) {
@@ -17,6 +19,18 @@ export async function listAdminsController(req, res) {
     message: MESSAGES.ADMIN.LIST_SUCCESS,
     data: { admins: admins.map(toAdminDto) },
   });
+}
+
+export async function deleteAdminController(req, res) {
+  try {
+    await deleteAdmin(req.params.id, req.admin);
+    return sendSuccess(res, { message: MESSAGES.ADMIN.DELETE_SUCCESS });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
 }
 
 export async function createAdminController(req, res) {

@@ -31,6 +31,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import { sendSuccess, sendError } from './utils/response.js';
 import { MESSAGES } from './constants/messages.js';
 import logger from './utils/logger.js';
+import { getAllowedOrigins } from './utils/allowedOrigins.js';
 import { ensureDefaultCategories } from './services/category.service.js';
 import { AppError } from './utils/AppError.js';
 import { BULK_MAIL_BODY_LIMIT } from './constants/mails.js';
@@ -91,7 +92,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://kisar.netlify.app,https://kisar-admin.netlify.app').split(',');
+const allowedOrigins = getAllowedOrigins();
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)), credentials: true }));
 app.use(cookieParser());
 // Designed bulk emails carry a full HTML document, which blows past the default

@@ -1,15 +1,16 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import logger from './logger.js';
 
-const REGION = process.env.AWS_REGION;
-const BUCKET_NAME = process.env.S3_BUCKET_NAME;
-
-const s3Client = new S3Client({
-  region: REGION,
-});
+// Read per call so the values are picked up regardless of when dotenv loads
+// (ES imports are hoisted above dotenv.config() in app.js).
+let s3Client;
+function getClient() {
+  s3Client ??= new S3Client({ region: process.env.AWS_REGION });
+  return s3Client;
+}
 
 function buildObjectUrl(key) {
-  return `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
+  return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }
 
 // Deterministic naming scheme carried over from the old disk-storage middleware,
@@ -21,8 +22,8 @@ export function generateObjectKey(prefix, originalname) {
 }
 
 export async function uploadBufferToS3({ buffer, mimetype, key }) {
-  await s3Client.send(new PutObjectCommand({
-    Bucket: BUCKET_NAME,
+  await getClient().send(new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET_NAME,
     Key: key,
     Body: buffer,
     ContentType: mimetype,
@@ -43,7 +44,7 @@ export async function deleteObjectFromS3(fileUrl) {
   if (!key) return;
 
   try {
-    await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+    await getClient().send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET_NAME, Key: key }));
   } catch (err) {
     logger.error(`[deleteObjectFromS3] Failed to delete ${key}: ${err.message}`);
   }

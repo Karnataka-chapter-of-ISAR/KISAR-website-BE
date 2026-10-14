@@ -5,8 +5,7 @@ import { AppError } from '../utils/AppError.js';
 import { sendEmail } from '../utils/mailer.js';
 import logger from '../utils/logger.js';
 import { renderOtp } from '../templates/emails/otp.js';
-import { MESSAGES } from '../constants/messages.js';
-import * as otpRepository from '../repositories/otp.repository.js';
+import { MESSAGES } from '../constants/messages.js';import * as otpRepository from '../repositories/otp.repository.js';
 import * as adminRepository from '../repositories/admin.repository.js';
 import * as blacklistedTokenRepository from '../repositories/blacklistedToken.repository.js';
 
