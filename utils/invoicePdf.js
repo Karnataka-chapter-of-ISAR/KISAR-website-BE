@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
 import { cgstRatePercent, sgstRatePercent, INVOICE_SAC_CODE } from './gst.js';
 import { formatDateRange } from './date.js';
@@ -9,6 +12,19 @@ const RULE = '#efdce8';
 
 const MARGIN = 48;
 const PAGE_WIDTH = 595.28 - MARGIN * 2;
+
+const LOGO_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'kisar-logo.png');
+const LOGO_SIZE = 64;
+const LOGO_GAP = 16;
+
+// Read once. A missing logo must never stop an invoice from being generated.
+const logo = (() => {
+  try {
+    return fs.readFileSync(LOGO_PATH);
+  } catch {
+    return null;
+  }
+})();
 
 // Supplier details come from the environment so the GSTIN/address can be set per deployment.
 const supplier = () => ({
@@ -42,12 +58,14 @@ export function generateInvoicePdf({ registration }) {
     const cgstRate = `${cgstRatePercent()}%`;
     const sgstRate = `${sgstRatePercent()}%`;
 
-    // Header
-    doc.font('Helvetica-Bold').fontSize(22).fillColor(BRAND).text('TAX INVOICE', MARGIN, MARGIN);
+    // Header — logo in the top-left corner, the title and seller block beside it.
+    if (logo) doc.image(logo, MARGIN, MARGIN, { fit: [LOGO_SIZE, LOGO_SIZE] });
+    const headerX = logo ? MARGIN + LOGO_SIZE + LOGO_GAP : MARGIN;
+    doc.font('Helvetica-Bold').fontSize(22).fillColor(BRAND).text('TAX INVOICE', headerX, MARGIN);
     doc.moveDown(0.2);
     doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(seller.name);
     doc.font('Helvetica').fontSize(9).fillColor(MUTED);
-    if (seller.address) doc.text(seller.address, { width: PAGE_WIDTH * 0.6 });
+    if (seller.address) doc.text(seller.address, { width: PAGE_WIDTH * 0.6 - (headerX - MARGIN) });
     if (seller.gstin) doc.text(`GSTIN: ${seller.gstin}`);
     doc.text(seller.email);
 

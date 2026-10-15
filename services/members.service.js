@@ -1,9 +1,10 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import ExcelJS from 'exceljs';
+import { digitsToNumber } from '../utils/excel.js';
 import { AppError } from '../utils/AppError.js';
 import { MESSAGES } from '../constants/messages.js';
-import { EMAIL_REGEX, PHONE_REGEX } from '../constants/members.js';
+import { EMAIL_REGEX, PHONE_REGEX, MEMBER_SOURCE } from '../constants/members.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as pendingMemberImportRepository from '../repositories/pendingMemberImport.repository.js';
 import * as memberEditRequestRepository from '../repositories/memberEditRequest.repository.js';
@@ -206,6 +207,9 @@ export async function confirmMembersImport(batchId) {
       const startSeq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, rows.length, session);
       rows.forEach((row, idx) => {
         row.memberId = formatMemberId(startSeq + idx);
+        row.source = MEMBER_SOURCE.BULK_UPLOAD;
+        // No "Joined" column (or an empty cell) → the member joins when they are added.
+        if (row.joined == null || row.joined === '') row.joined = new Date().getFullYear();
       });
 
       inserted = await memberRepository.insertMembers(rows, session);
@@ -241,7 +245,7 @@ export async function createMember(data) {
   try {
     await session.withTransaction(async () => {
       const seq = await counterRepository.reserveSequenceRange(MEMBER_ID_COUNTER, 1, session);
-      member = await memberRepository.createMember({ ...data, memberId: formatMemberId(seq) }, session);
+      member = await memberRepository.createMember({ ...data, joined: data.joined ?? new Date().getFullYear(), memberId: formatMemberId(seq), source: MEMBER_SOURCE.MANUAL }, session);
     });
   } finally {
     await session.endSession();
@@ -302,7 +306,6 @@ const MEMBER_EXPORT_COLUMNS = [
   { header: 'Alternate Email',     key: 'alternateEmail' },
   { header: 'Phone',               key: 'phone' },
   { header: 'Alternate Phone',     key: 'alternatePhone' },
-  { header: 'Institution',         key: 'institution' },
   { header: 'Address',             key: 'address' },
   { header: 'City',                key: 'city' },
   { header: 'District',            key: 'district' },
@@ -313,8 +316,21 @@ const MEMBER_EXPORT_COLUMNS = [
   { header: 'Chapter',             key: 'chapter' },
   { header: 'LinkedIn',            key: 'linkedin' },
   { header: 'Joined',              key: 'joined' },
-  { header: 'Privacy',             key: 'privacy' },
+  { header: 'Added Via',           key: 'source' },
 ];
+
+const MEMBER_SOURCE_EXPORT_LABELS = {
+  [MEMBER_SOURCE.MANUAL]: 'Admin portal',
+  [MEMBER_SOURCE.BULK_UPLOAD]: 'Bulk upload',
+};
+
+const NUMERIC_EXPORT_FIELDS = ['phone', 'alternatePhone', 'pincode', 'ISARMemberID'];
+
+function toExportRow(member) {
+  const row = { ...member, source: MEMBER_SOURCE_EXPORT_LABELS[member.source] ?? 'Unknown' };
+  for (const field of NUMERIC_EXPORT_FIELDS) row[field] = digitsToNumber(row[field]);
+  return row;
+}
 
 // Streams every member straight into an .xlsx workbook written directly to
 // `res`, one row at a time via a DB cursor — the whole collection is never
@@ -328,7 +344,7 @@ export async function streamMembersToExcel(res) {
   worksheet.columns = MEMBER_EXPORT_COLUMNS;
 
   for await (const member of memberRepository.getMembersCursor()) {
-    worksheet.addRow(member).commit();
+    worksheet.addRow(toExportRow(member)).commit();
   }
 
   worksheet.commit();

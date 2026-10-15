@@ -1,4 +1,5 @@
 import Registration from '../models/Registration.js';
+import Member from '../models/Member.js';
 import { REGISTRATION_STATUS, REFUND_STATUS } from '../constants/events.js';
 
 const { CONFIRMED, PENDING_PAYMENT, REFUND_PENDING, REFUNDED, EVENT_CANCELLED } = REGISTRATION_STATUS;
@@ -82,18 +83,66 @@ export async function countConfirmedByEventIds(eventIds) {
   return new Map(rows.map((row) => [String(row._id), row.count]));
 }
 
-const attendeeFilter = ({ eventId, status }) => ({ eventId, status: status ?? CONFIRMED });
+// Sum of `amount` (entry fee + GST) over confirmed paid registrations, so
+// refunded / refund-pending / cancelled ones are excluded. With `since`, only
+// payments received on or after that date count.
+export async function sumConfirmedRevenue({ since } = {}) {
+  const [row] = await Registration.aggregate([
+    {
+      $match: {
+        status: CONFIRMED,
+        isActive: true,
+        amount: { $gt: 0 },
+        ...(since ? { 'payment.paidAt': { $gte: since } } : {}),
+      },
+    },
+    { $group: { _id: null, total: { $sum: '$amount' } } },
+  ]);
+  return row?.total ?? 0;
+}
+
+const attendeeFilter =({ eventId, status }) => ({ eventId, status: status ?? CONFIRMED });
 
 export function countForEvent({ eventId, status }) {
   return Registration.countDocuments(attendeeFilter({ eventId, status }));
 }
 
+// Pipeline stages that add `kisarId` (the member's KISAR-0001-style memberId,
+// or null for non-members) to each registration. Matches on the stored member
+// reference first, then on email — the reference goes stale if the member
+// record was deleted and re-created.
+function kisarIdStages() {
+  const members = Member.collection.name;
+  const project = [{ $project: { memberId: 1 } }];
+
+  return [
+    { $lookup: { from: members, localField: 'memberId', foreignField: '_id', as: 'byId', pipeline: project } },
+    { $lookup: { from: members, localField: 'email', foreignField: 'email', as: 'byEmail', pipeline: project } },
+    { $addFields: { kisarId: { $ifNull: [{ $arrayElemAt: ['$byId.memberId', 0] }, { $arrayElemAt: ['$byEmail.memberId', 0] }] } } },
+    { $project: { byId: 0, byEmail: 0 } },
+  ];
+}
+
+// Cursor so the Excel export streams registrations instead of loading them all.
+// `eventId` must be an ObjectId — aggregation does not cast strings.
+export function getForEventCursor({ eventId, status }) {
+  return Registration.aggregate([
+    { $match: attendeeFilter({ eventId, status }) },
+    { $sort: { createdAt: 1 } },
+    ...kisarIdStages(),
+  ]).cursor();
+}
+
+// Pagination runs before the lookups so only the visible page is joined.
+// `eventId` must be an ObjectId — aggregation does not cast strings.
 export function findForEventPaginated({ eventId, status, skip, limit }) {
-  return Registration.find(attendeeFilter({ eventId, status }))
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .lean();
+  return Registration.aggregate([
+    { $match: attendeeFilter({ eventId, status }) },
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+    ...kisarIdStages(),
+  ]);
 }
 
 // Event ids (as strings) the given email is confirmed for — drives the

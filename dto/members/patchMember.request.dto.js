@@ -1,6 +1,6 @@
-import { EMAIL_REGEX, PHONE_REGEX, MEMBER_PRIVACY_OPTIONS, ADMIN_EDITABLE_MEMBER_FIELDS } from '../../constants/members.js';
+import { EMAIL_REGEX, PHONE_REGEX, ADMIN_EDITABLE_MEMBER_FIELDS } from '../../constants/members.js';
 
-const NUMERIC_FIELDS = ['joined', 'lat', 'lng', 'colorIndex'];
+const NUMERIC_FIELDS = ['joined', 'colorIndex'];
 
 // Validates an admin's field-wise edit from the members grid (AG-Grid sends
 // one or a few changed cells per request, not the full row). Unlike
@@ -31,15 +31,11 @@ export function validatePatchMemberRequest(body = {}) {
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'phone') && body.phone && !PHONE_REGEX.test(body.phone.toString().trim())) {
-    errors.push('Phone must be a valid 10-digit Indian mobile number.');
+    errors.push('Phone must be a valid 10-digit phone number.');
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'alternatePhone') && body.alternatePhone && !PHONE_REGEX.test(body.alternatePhone.toString().trim())) {
-    errors.push('Alternate phone must be a valid 10-digit Indian mobile number.');
-  }
-
-  if (Object.prototype.hasOwnProperty.call(body, 'privacy') && body.privacy && !MEMBER_PRIVACY_OPTIONS.includes(body.privacy)) {
-    errors.push(`Privacy must be one of: ${MEMBER_PRIVACY_OPTIONS.join(', ')}.`);
+    errors.push('Alternate phone must be a valid 10-digit phone number.');
   }
 
   if (errors.length > 0) return { valid: false, errors };

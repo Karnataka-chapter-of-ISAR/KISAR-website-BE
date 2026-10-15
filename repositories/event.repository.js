@@ -63,6 +63,16 @@ export function countPastEvents(beforeDate) {
   return Event.countDocuments(endedBefore(beforeDate));
 }
 
+// Events that finished within [fromDate, beforeDate).
+export function countEventsEndedBetween(fromDate, beforeDate) {
+  return Event.countDocuments({
+    $or: [
+      { endDate: { $gte: fromDate, $lt: beforeDate } },
+      { endDate: null, date: { $gte: fromDate, $lt: beforeDate } },
+    ],
+  });
+}
+
 export function findNextEvent(fromDate) {
   return Event.findOne(endsOnOrAfter(fromDate)).sort({ date: 1, time: 1 }).lean();
 }

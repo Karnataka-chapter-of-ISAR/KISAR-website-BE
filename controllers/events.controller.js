@@ -2,7 +2,7 @@ import { validateCreateEventRequest } from '../dto/events/createEvent.request.dt
 import { validateUpdateEventRequest } from '../dto/events/updateEvent.request.dto.js';
 import { toEventResponseDto } from '../dto/events/event.response.dto.js';
 import { toEventAttendeeResponseDto } from '../dto/events/eventAttendee.response.dto.js';
-import { createEvent, updateEvent, deleteEvent, listEventsForMember, getEventAttendees } from '../services/events.service.js';
+import { createEvent, updateEvent, deleteEvent, listEventsForMember, getEventAttendees, getEventForExport, streamEventAttendeesToExcel } from '../services/events.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
@@ -106,6 +106,25 @@ export async function getMyEventsController(req, res) {
   });
 }
 
+// GET /api/v1/admin/events/:id/attendees/export?status=confirmed
+export async function exportEventAttendeesController(req, res) {
+  const status = Object.values(REGISTRATION_STATUS).includes(req.query.status) ? req.query.status : undefined;
+
+  try {
+    const event = await getEventForExport(req.params.id);
+    const slug = event.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'event';
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${slug}-registrations.xlsx"`);
+    await streamEventAttendeesToExcel({ event, status, res, baseUrl: `${req.protocol}://${req.get('host')}` });
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
+    }
+    throw err;
+  }
+}
+
 export async function getEventAttendeesController(req, res) {
   const { page, limit, skip } = parsePagination(req.query);
 
@@ -120,7 +139,7 @@ export async function getEventAttendeesController(req, res) {
           title:           event.title,
           registeredCount,
         },
-        attendees: registrations.map(toEventAttendeeResponseDto),
+        attendees: registrations.map((registration) => toEventAttendeeResponseDto(registration, `${req.protocol}://${req.get('host')}`)),
         pagination: buildPaginationMeta({ page, limit, totalCount }),
       },
     });

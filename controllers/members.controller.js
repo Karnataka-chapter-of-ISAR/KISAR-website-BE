@@ -1,4 +1,6 @@
 import { validateMembersSheet, confirmMembersImport, createMember, updateMember, streamMembersToExcel, listMembers, listMembersForAdmin, getMemberCountsByCity, filterMembers, getOwnProfile } from '../services/members.service.js';
+import { recordActivity } from '../services/activity.service.js';
+import { ACTIVITY_TYPES } from '../constants/activity.js';
 import { validateCreateMemberRequest } from '../dto/members/createMember.request.dto.js';
 import { validatePatchMemberRequest } from '../dto/members/patchMember.request.dto.js';
 import { toValidateImportResponseDto } from '../dto/members/validateImport.response.dto.js';
@@ -32,6 +34,11 @@ export async function validateMembersImportController(req, res) {
 export async function confirmMembersImportController(req, res) {
   try {
     const imported = await confirmMembersImport(req.params.batchId);
+    await recordActivity({
+      type: ACTIVITY_TYPES.MEMBERS_BULK_UPLOADED,
+      admin: req.admin,
+      metadata: { count: imported },
+    });
     return sendSuccess(res, {
       message: MESSAGES.MEMBERS.IMPORT_SUCCESS,
       statusCode: 201,

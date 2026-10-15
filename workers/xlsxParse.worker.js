@@ -7,15 +7,11 @@ const HEADER_MAP = {
   // plain template
   name:              'name',
   email:             'email',
-  institution:       'institution',
   city:              'city',
   district:          'district',
   phone:             'phone',
   linkedin:          'linkedin',
   joined:            'joined',
-  privacy:           'privacy',
-  lat:               'lat',
-  lng:               'lng',
   colorindex:        'colorIndex',
 
   // ISAR membership-registry export

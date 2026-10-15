@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createEventController, updateEventController, deleteEventController, getEventAttendeesController, uploadEventImageController } from '../../controllers/events.controller.js';
+import { createEventController, updateEventController, deleteEventController, getEventAttendeesController, exportEventAttendeesController, uploadEventImageController } from '../../controllers/events.controller.js';
 import { initiateEventRefundsController, getEventRefundsController } from '../../controllers/refund.controller.js';
 import { getEventsController } from '../../controllers/publicEvents.controller.js';
 import { uploadBannerImage } from '../../middleware/uploadBannerImage.js';
@@ -16,6 +16,7 @@ router.patch('/:id', authenticateAdmin, uploadBannerImage, asyncHandler(updateEv
 router.delete('/:id', authenticateAdmin, asyncHandler(deleteEventController));
 router.post('/:id/refunds', authenticateAdmin, asyncHandler(initiateEventRefundsController));
 router.get('/:id/refunds', authenticateAdmin, asyncHandler(getEventRefundsController));
+router.get('/:id/attendees/export', authenticateAdmin, asyncHandler(exportEventAttendeesController));
 router.get('/:id/attendees', authenticateAdmin, asyncHandler(getEventAttendeesController));
 
 export default router;

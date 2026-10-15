@@ -1,3 +1,6 @@
+import mongoose from 'mongoose';
+import * as registrationRepository from '../repositories/registration.repository.js';
+import { generateInvoicePdf } from '../utils/invoicePdf.js';
 import { validateRegisterRequest } from '../dto/events/registerForEvent.request.dto.js';
 import { toRegistrationResponseDto } from '../dto/events/registration.response.dto.js';
 import { validateSendOtpRequest } from '../dto/auth/sendOtp.request.dto.js';
@@ -87,4 +90,21 @@ export async function cashfreeWebhookController(req, res) {
     if (err instanceof AppError) return sendAppError(res, err);
     throw err;
   }
+}
+
+// GET /api/v1/admin/registrations/:id/invoice
+// Invoices aren't stored — the PDF is regenerated from the registration each time.
+export async function downloadInvoiceController(req, res) {
+  const registration = mongoose.Types.ObjectId.isValid(req.params.id)
+    ? await registrationRepository.findRegistrationById(req.params.id)
+    : null;
+
+  if (!registration?.invoice?.number) {
+    return sendError(res, { message: MESSAGES.REGISTRATION.INVOICE_NOT_FOUND, statusCode: 404 });
+  }
+
+  const pdf = await generateInvoicePdf({ registration });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="Invoice-${registration.invoice.number.replace(/\//g, '-')}.pdf"`);
+  return res.send(pdf);
 }

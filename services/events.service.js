@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import ExcelJS from 'exceljs';
+import { digitsToNumber } from '../utils/excel.js';
 import * as eventRepository from '../repositories/event.repository.js';
 import * as memberRepository from '../repositories/member.repository.js';
 import * as registrationRepository from '../repositories/registration.repository.js';
@@ -104,10 +106,85 @@ export async function getEventAttendees({ eventId, status, skip, limit }) {
   if (!event) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
 
   const [registrations, totalCount, registeredCount] = await Promise.all([
-    registrationRepository.findForEventPaginated({ eventId, status, skip, limit }),
+    registrationRepository.findForEventPaginated({ eventId: event._id, status, skip, limit }),
     registrationRepository.countForEvent({ eventId, status }),
     registrationRepository.countForEvent({ eventId }),
   ]);
 
   return { event, registrations, totalCount, registeredCount };
+}
+
+// Throws (404) before any bytes are written, so the controller can still send a JSON error.
+export async function getEventForExport(eventId) {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
+
+  const event = await eventRepository.findEventById(eventId);
+  if (!event) throw new AppError(MESSAGES.EVENTS.NOT_FOUND, 404);
+  return event;
+}
+
+const formatExportDateTime = (date) => (date
+  ? new Date(date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
+  : '');
+
+const formatAnswerValue = (value) => {
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return value ?? '';
+};
+
+// Streams an event's registrations (one status, like the admin tab: confirmed
+// unless another is asked for) into an .xlsx written directly to `res`. One
+// column per registration question the event defines, after the fixed ones.
+export async function streamEventAttendeesToExcel({ event, status, res, baseUrl }) {
+  const questions = event.registrationFields ?? [];
+  const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res, useStyles: false, useSharedStrings: false });
+  const worksheet = workbook.addWorksheet('Registrations');
+  worksheet.columns = [
+    { header: 'Name', key: 'name' },
+    { header: 'Email', key: 'email' },
+    { header: 'Phone', key: 'phone' },
+    { header: 'Member / Non-member', key: 'memberType' },
+    { header: 'KISAR ID', key: 'kisarId' },
+    { header: 'ISAR Member ID', key: 'isarMemberId' },
+    { header: 'Status', key: 'status' },
+    { header: 'Entry Fee', key: 'baseAmount' },
+    { header: 'CGST', key: 'cgst' },
+    { header: 'SGST', key: 'sgst' },
+    { header: 'Total Paid', key: 'amount' },
+    { header: 'Invoice No', key: 'invoiceNumber' },
+    { header: 'Invoice Link', key: 'invoiceLink' },
+    { header: 'Paid At', key: 'paidAt' },
+    { header: 'Registered At', key: 'registeredAt' },
+    ...questions.map((question) => ({ header: question.label, key: `answer_${question.key}` })),
+  ];
+
+  for await (const registration of registrationRepository.getForEventCursor({ eventId: event._id, status })) {
+    const answersByKey = new Map((registration.answers ?? []).map((answer) => [answer.key, answer.value]));
+    const row = {
+      name: registration.name,
+      email: registration.email,
+      phone: digitsToNumber(registration.phone),
+      memberType: registration.isMember ? 'Member' : 'Non-member',
+      kisarId: registration.kisarId ?? '',
+      isarMemberId: digitsToNumber(registration.isarMemberId ?? ''),
+      status: registration.status,
+      baseAmount: registration.baseAmount ?? '',
+      cgst: registration.cgst ?? '',
+      sgst: registration.sgst ?? '',
+      amount: registration.amount,
+      invoiceNumber: registration.invoice?.number ?? '',
+      // Clickable hyperlink cell; opens the PDF when the admin is signed in.
+      invoiceLink: registration.invoice?.number
+        ? { text: 'View invoice', hyperlink: `${baseUrl}/api/v1/admin/registrations/${registration._id}/invoice` }
+        : '',
+      paidAt: formatExportDateTime(registration.payment?.paidAt),
+      registeredAt: formatExportDateTime(registration.createdAt),
+    };
+    for (const question of questions) row[`answer_${question.key}`] = formatAnswerValue(answersByKey.get(question.key));
+    worksheet.addRow(row).commit();
+  }
+
+  worksheet.commit();
+  await workbook.commit();
 }

@@ -1,4 +1,4 @@
-import { EMAIL_REGEX, PHONE_REGEX, MEMBER_PRIVACY_OPTIONS, MEMBER_EDIT_FIELDS } from '../../constants/members.js';
+import { EMAIL_REGEX, PHONE_REGEX, MEMBER_EDIT_FIELDS } from '../../constants/members.js';
 import { getFieldMode } from '../../utils/profileUtil.js';
 
 // Validates a member's self-service profile edit submission. This is a
@@ -26,19 +26,15 @@ export function validateMemberEditRequest(body = {}) {
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'phone') && body.phone && !PHONE_REGEX.test(body.phone.toString().trim())) {
-    errors.push('Phone must be a valid 10-digit Indian mobile number.');
+    errors.push('Phone must be a valid 10-digit phone number.');
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'alternatePhone') && body.alternatePhone && !PHONE_REGEX.test(body.alternatePhone.toString().trim())) {
-    errors.push('Alternate phone must be a valid 10-digit Indian mobile number.');
+    errors.push('Alternate phone must be a valid 10-digit phone number.');
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'alternateEmail') && body.alternateEmail && !EMAIL_REGEX.test(body.alternateEmail.toString().trim())) {
     errors.push('Alternate email must be a valid email address.');
-  }
-
-  if (Object.prototype.hasOwnProperty.call(body, 'privacy') && body.privacy && !MEMBER_PRIVACY_OPTIONS.includes(body.privacy)) {
-    errors.push(`Privacy must be one of: ${MEMBER_PRIVACY_OPTIONS.join(', ')}.`);
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'experience')) {

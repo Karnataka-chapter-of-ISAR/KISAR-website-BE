@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { MEMBER_SOURCE } from '../constants/members.js';
 
 const memberSchema = new mongoose.Schema(
   {
@@ -11,7 +12,6 @@ const memberSchema = new mongoose.Schema(
     alternateEmail:    { type: String, trim: true, lowercase: true, default: null },
     phone:             { type: String, trim: true, default: null },
     alternatePhone:    { type: String, trim: true, default: null },
-    institution:       { type: String, trim: true, default: null },
     address:           { type: String, trim: true, default: null },
     city:              { type: String, trim: true, default: null },
     district:          { type: String, trim: true, default: null },
@@ -22,14 +22,14 @@ const memberSchema = new mongoose.Schema(
     chapter:           { type: String, trim: true, default: null },
     linkedin:          { type: String, trim: true, default: null },
     joined:            { type: Number, default: null },
-    privacy:           { type: String, enum: ['public', 'limited', 'private'], default: 'public' },
-    lat:               { type: Number, default: null },
-    lng:               { type: Number, default: null },
     colorIndex:        { type: Number, default: 0 },
     experience:        { type: String, trim: true, default: null },
     // Field names currently awaiting admin review — see MemberEditRequest.
     // Locked fields are disabled for further edits until approved/rejected.
     lockedFields:      { type: [String], default: [] },
+    // 'manual' = added via the admin portal's "Add member", 'bulk_upload' = via
+    // the bulk import. null for members created before this field existed.
+    source:            { type: String, enum: Object.values(MEMBER_SOURCE), default: null },
   },
   { timestamps: true },
 );

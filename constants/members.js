@@ -1,6 +1,6 @@
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const PHONE_REGEX = /^(?:\+91)?[6-9]\d{9}$/;
-export const MEMBER_PRIVACY_OPTIONS = ['public', 'limited', 'private'];
+// Members: any 10 digits, optionally prefixed with +91.
+export const PHONE_REGEX = /^(?:\+91)?\d{10}$/;
 
 // Fields a member may submit for self-service edit, grouped by profile tab.
 // email/ISARMemberID/memberId are deliberately excluded — email is the login
@@ -8,11 +8,14 @@ export const MEMBER_PRIVACY_OPTIONS = ['public', 'limited', 'private'];
 export const MEMBER_EDIT_SECTION_FIELDS = {
   details: [
     'name', 'title', 'phone', 'alternatePhone', 'alternateEmail',
-    'institution', 'address', 'city', 'district', 'state',
+    'address', 'city', 'district', 'state',
     'pincode', 'country', 'linkedin', 'experience',
   ],
-  membership: ['membershipCategory', 'zone', 'chapter', 'joined', 'privacy'],
+  membership: ['membershipCategory', 'zone', 'chapter', 'joined'],
 };
+
+// How a member record was created. Members that predate this field have no source (null).
+export const MEMBER_SOURCE = { MANUAL: 'manual', BULK_UPLOAD: 'bulk_upload' };
 
 export const MEMBER_EDIT_REQUEST_STATUS = ['pending', 'approved', 'rejected'];
 
@@ -31,19 +34,19 @@ export function getMemberFieldSection(field) {
 // generated sequence ID) and lockedFields (managed only by the edit-request flow).
 export const ADMIN_EDITABLE_MEMBER_FIELDS = [
   'ISARMemberID', 'name', 'title', 'membershipCategory', 'email', 'alternateEmail',
-  'phone', 'alternatePhone', 'institution', 'address',
+  'phone', 'alternatePhone', 'address',
   'city', 'district', 'state', 'pincode', 'country', 'zone', 'chapter', 'linkedin',
-  'joined', 'privacy', 'lat', 'lng', 'colorIndex',
+  'joined', 'colorIndex',
 ];
 
 // Every string-valued Member field, searched together for the admin grid's
-// search box. Excludes lat/lng/colorIndex (internal, not identity/contact
+// search box. Excludes colorIndex (internal, not identity/contact
 // data) — joined (year) is handled separately since it's numeric.
 export const MEMBER_SEARCHABLE_STRING_FIELDS = [
   'memberId', 'ISARMemberID', 'name', 'title', 'membershipCategory', 'email',
   'alternateEmail', 'phone', 'alternatePhone',
-  'institution', 'address', 'city', 'district', 'state', 'pincode', 'country',
-  'zone', 'chapter', 'linkedin', 'privacy',
+  'address', 'city', 'district', 'state', 'pincode', 'country',
+  'zone', 'chapter', 'linkedin',
 ];
 
 // Name of the Atlas Search index the admin directory search runs against

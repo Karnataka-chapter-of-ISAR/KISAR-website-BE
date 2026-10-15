@@ -68,6 +68,28 @@ export function countMembers() {
   return Member.countDocuments();
 }
 
+export function countMembersCreatedSince(since) {
+  return Member.countDocuments({ createdAt: { $gte: since } });
+}
+
+export function countMembersCreatedBefore(before) {
+  return Member.countDocuments({ createdAt: { $lt: before } });
+}
+
+// New members per calendar month from `since` onwards, as [{ year, month (1-12), count }].
+export function countMembersCreatedPerMonthSince(since) {
+  return Member.aggregate([
+    { $match: { createdAt: { $gte: since } } },
+    {
+      $group: {
+        _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+        count: { $sum: 1 },
+      },
+    },
+    { $project: { _id: 0, year: '$_id.year', month: '$_id.month', count: 1 } },
+  ]);
+}
+
 // Admin directory search — Atlas Search when a term is given (see
 // buildMemberSearchStage), otherwise the same plain paginated list/count
 // used everywhere else. Combines the page of results and the total count

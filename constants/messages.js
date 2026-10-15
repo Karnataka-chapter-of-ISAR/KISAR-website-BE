@@ -20,6 +20,9 @@ export const MESSAGES = {
     TOO_MANY_ATTEMPTS: 'Too many incorrect attempts. Your code has been invalidated. Please request a new one.',
     RATE_LIMITED: 'You have requested too many codes. Please wait 15 minutes before trying again.',
     SEND_FAILED: 'We could not send the verification code right now. Please try again in a few minutes.',
+    VERIFY_RATE_LIMITED: 'Too many verification attempts. Please wait 15 minutes before trying again.',
+    RESEND_COOLDOWN: 'A code was sent to this email a moment ago. Please check your inbox, or wait a minute before requesting another.',
+    EMAIL_RATE_LIMITED: 'Too many codes have been requested for this email. Please try again in an hour.',
     NOT_A_MEMBER: 'This email is not registered as a member. Please contact your administrator.',
   },
 
@@ -94,6 +97,7 @@ export const MESSAGES = {
     PAYMENT_REQUIRED: 'Registration saved. Complete the payment to confirm your seat.',
     STATUS_FETCH_SUCCESS: 'Registration status fetched successfully.',
     NOT_FOUND: 'Registration not found.',
+    INVOICE_NOT_FOUND: 'No invoice exists for this registration.',
     VALIDATION_ERROR: 'Please fix the highlighted fields and try again.',
   },
 
@@ -156,6 +160,8 @@ export const MESSAGES = {
   DASHBOARD: {
     KPIS_FETCH_SUCCESS: 'Dashboard KPIs fetched successfully.',
     OVERVIEW_FETCH_SUCCESS: 'Dashboard overview fetched successfully.',
+    ACTIVITY_FETCH_SUCCESS: 'Recent activity fetched successfully.',
+    NO_ACTIVITY: 'No activities this month yet.',
   },
 
 };

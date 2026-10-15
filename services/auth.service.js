@@ -9,6 +9,7 @@ import logger from '../utils/logger.js';
 import { renderOtp } from '../templates/emails/otp.js';
 import { MESSAGES } from '../constants/messages.js';
 import * as otpRepository from '../repositories/otp.repository.js';
+import * as otpThrottleRepository from '../repositories/otpThrottle.repository.js';
 import * as refreshTokenRepository from '../repositories/refreshToken.repository.js';
 import * as blacklistedTokenRepository from '../repositories/blacklistedToken.repository.js';
 import * as memberRepository from '../repositories/member.repository.js';
@@ -16,6 +17,10 @@ import * as memberRepository from '../repositories/member.repository.js';
 const ACCESS_TOKEN_JWT_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const OTP_TTL_MS = 10 * 60 * 1000;
+// Per-email limits on requesting login codes (on top of the per-IP limiter on the route).
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+const OTP_MAX_REQUESTS_PER_HOUR = 5;
+const OTP_REQUEST_WINDOW_MS = 60 * 60 * 1000;
 
 const DEV_EMAIL = 'test@gmail.com';
 const DEV_OTP   = '948260';
@@ -59,6 +64,21 @@ export async function requestOtp(email) {
   const member = await memberRepository.findMemberByEmail(email.toLowerCase());
   if (!member) throw new AppError(MESSAGES.OTP.NOT_A_MEMBER, 403);
 
+  const throttleKey = `login:${email.toLowerCase()}`;
+  const slot = await otpThrottleRepository.takeSlot({
+    key: throttleKey,
+    cooldownMs: OTP_RESEND_COOLDOWN_MS,
+    maxPerWindow: OTP_MAX_REQUESTS_PER_HOUR,
+    windowMs: OTP_REQUEST_WINDOW_MS,
+  });
+  if (!slot.allowed) {
+    throw new AppError(
+      slot.reason === 'limit' ? MESSAGES.OTP.EMAIL_RATE_LIMITED : MESSAGES.OTP.RESEND_COOLDOWN,
+      429,
+      { retryAfterSeconds: Math.ceil(slot.retryAfterMs / 1000) },
+    );
+  }
+
   const otp     = crypto.randomInt(100000, 999999).toString();
   const otpHash = await bcrypt.hash(otp, 10);
 
@@ -72,6 +92,7 @@ export async function requestOtp(email) {
   } catch (err) {
     logger.error(`[requestOtp] SES send failed for ${email}: ${err.name}: ${err.message}`);
     await otpRepository.deleteOtpsForEmail(email);
+    await otpThrottleRepository.releaseSlot(throttleKey);
     throw new AppError(MESSAGES.OTP.SEND_FAILED, 502);
   }
 }

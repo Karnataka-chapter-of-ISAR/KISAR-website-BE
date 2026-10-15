@@ -7,6 +7,14 @@ export const otpRequestLimiter = rateLimit({
   message: { success: false, message: MESSAGES.OTP.RATE_LIMITED, data: null },
 });
 
+// Member login code verification. Looser than the request limit (people mistype),
+// but stops an attacker cycling through fresh codes with 5 guesses each.
+export const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, message: MESSAGES.OTP.VERIFY_RATE_LIMITED, data: null },
+});
+
 export const adminOtpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,

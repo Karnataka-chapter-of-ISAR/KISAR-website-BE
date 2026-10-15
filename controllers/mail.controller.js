@@ -1,4 +1,6 @@
 import { sendBulkMail } from '../services/bulkMail.service.js';
+import { recordActivity } from '../services/activity.service.js';
+import { ACTIVITY_TYPES } from '../constants/activity.js';
 import { validateSendBulkMailRequest } from '../dto/mails/sendBulkMail.request.dto.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -18,6 +20,15 @@ export async function sendBulkMailController(req, res) {
 
   try {
     const result = await sendBulkMail(data);
+    await recordActivity({
+      type: ACTIVITY_TYPES.BULK_MAIL_SENT,
+      admin: req.admin,
+      metadata: {
+        subject: data.subject,
+        sentCount: result.sent.length,
+        failedCount: result.failed.length + result.notFound.length,
+      },
+    });
     const summary = {
       sentCount: result.sent.length,
       failedCount: result.failed.length,
