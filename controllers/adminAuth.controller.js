@@ -36,8 +36,9 @@ export async function verifyAdminOtpController(req, res) {
   try {
     const { admin, accessToken } = await verifyAdminOtp(data.email, data.otp);
     setAdminAuthCookie(res, accessToken);
-    setAdminInfoCookies(res, toAdminInfo(admin));
-    return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS });
+    const info = toAdminInfo(admin);
+    setAdminInfoCookies(res, info);
+    return sendSuccess(res, { message: MESSAGES.AUTH.LOGIN_SUCCESS, data: info });
   } catch (err) {
     if (err instanceof AppError) {
       return sendError(res, { message: err.message, statusCode: err.statusCode, data: err.data });
@@ -46,10 +47,12 @@ export async function verifyAdminOtpController(req, res) {
   }
 }
 
-// Session check: refreshes the readable info cookies from the verified admin record.
+// Session check: refreshes the readable info cookies from the verified admin record and
+// also returns it in the body, since a cross-site FE cannot read the API's cookies.
 export function getAdminMeController(req, res) {
-  setAdminInfoCookies(res, toAdminInfo(req.admin));
-  return sendSuccess(res, {});
+  const info = toAdminInfo(req.admin);
+  setAdminInfoCookies(res, info);
+  return sendSuccess(res, { data: info });
 }
 
 export async function logoutAdminController(req, res) {

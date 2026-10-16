@@ -48,8 +48,11 @@ export function setAdminAuthCookie(res, accessToken) {
 // path '/' so the FE can read them from any page. Values are URI-encoded by res.cookie.
 const ADMIN_INFO_COOKIES = ['admin_name', 'admin_email', 'admin_role', 'admin_is_super_admin'];
 
+// Host-only cookies are invisible to other subdomains. Set COOKIE_DOMAIN (e.g. ".kisar.org.in")
+// in prod so the admin UI on office.kisar.org.in can read cookies set by the API on kisar.org.in.
 function adminInfoCookieOpts(maxAge) {
-  return { ...adminCookieOpts(maxAge), httpOnly: false, path: '/' };
+  const domain = process.env.COOKIE_DOMAIN;
+  return { ...adminCookieOpts(maxAge), httpOnly: false, path: '/', ...(domain && { domain }) };
 }
 
 export function setAdminInfoCookies(res, { name, email, role, isSuperAdmin }) {
