@@ -66,6 +66,12 @@ export function renderLayout({ preheader, eyebrow, title, subtitle, bodyHtml }) 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light only">
   <title>${escapeHtml(title)}</title>
+  <style>
+    @media only screen and (max-width:480px) {
+      .hero-text { padding:84px 20px 22px !important; }
+      .hero-title { font-size:26px !important; line-height:32px !important; }
+    }
+  </style>
   <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@600;700&family=Libre+Franklin:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background-color:#f4e6f0;">
@@ -81,9 +87,9 @@ export function renderLayout({ preheader, eyebrow, title, subtitle, bodyHtml }) 
               <v:fill type="frame" src="${headerImg}" color="#fbeff6" />
               <v:textbox inset="0,0,0,0">
             <![endif]-->
-            <div style="padding:0 32px 28px;">
+            <div class="hero-text" style="padding:72px 32px 28px;">
               <div style="font-family:${SANS_FONT};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND};padding-bottom:8px;">${escapeHtml(eyebrow)}</div>
-              <div style="font-family:${DISPLAY_FONT};font-size:34px;line-height:40px;font-weight:700;color:${PLUM};">${escapeHtml(title)}</div>
+              <div class="hero-title" style="font-family:${DISPLAY_FONT};font-size:34px;line-height:40px;font-weight:700;color:${PLUM};">${escapeHtml(title)}</div>
               <div style="font-family:${SANS_FONT};font-size:14px;line-height:20px;color:${INK};padding-top:8px;">${escapeHtml(subtitle)}</div>
             </div>
             <!--[if gte mso 9]></v:textbox></v:rect><![endif]-->
