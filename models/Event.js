@@ -14,6 +14,8 @@ const registrationFieldSchema = new mongoose.Schema(
     type:        { type: String, required: true, enum: REGISTRATION_FIELD_TYPES },
     required:    { type: Boolean, default: false },
     placeholder: { type: String, trim: true, default: null },
+    // Choices for a `checkbox` question (registrant picks one or more).
+    options:     { type: [String], default: [] },
   },
   { _id: false },
 );

@@ -107,7 +107,27 @@ export function validateRegistrationAnswers(fields, rawAnswers, errors) {
   for (const field of fields) {
     const raw = rawAnswers[field.key];
 
-    // A checkbox always has an answer: unticked/omitted is `false`, and a required one must be ticked.
+    // A checkbox with options is a pick-one-or-more question; the answer is the list of chosen options.
+    if (field.type === 'checkbox' && field.options?.length > 0) {
+      let selected = raw;
+      if (selected === undefined || selected === null || selected === '') selected = [];
+      if (typeof selected === 'string') selected = [selected];
+      if (!Array.isArray(selected) || selected.some((item) => typeof item !== 'string')) {
+        errors.push(`${field.label} is invalid.`);
+        continue;
+      }
+      selected = [...new Set(selected.map((item) => item.trim()))];
+      if (selected.some((item) => !field.options.includes(item))) {
+        errors.push(`${field.label} contains an option that isn't available.`);
+      } else if (field.required && selected.length === 0) {
+        errors.push(`${field.label} is required.`);
+      } else if (selected.length > 0) {
+        answers.push({ key: field.key, label: field.label, type: field.type, value: selected });
+      }
+      continue;
+    }
+
+    // A legacy checkbox (no options) always has an answer: unticked/omitted is `false`, and a required one must be ticked.
     if (field.type === 'checkbox') {
       const checked = raw === true || raw === 'true';
       const isBoolean = raw === undefined || raw === null || raw === '' || typeof raw === 'boolean' || raw === 'true' || raw === 'false';

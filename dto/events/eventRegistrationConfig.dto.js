@@ -5,6 +5,9 @@ import {
   REGISTRATION_FIELDS_MAX,
   REGISTRATION_FIELD_LABEL_MAX,
   REGISTRATION_FIELD_PLACEHOLDER_MAX,
+  REGISTRATION_OPTIONS_MIN,
+  REGISTRATION_OPTIONS_MAX,
+  REGISTRATION_OPTION_MAX,
   REGISTRATION_RESERVED_KEYS,
 } from '../../constants/events.js';
 
@@ -104,7 +107,7 @@ export function validatePricing(rawPricing, accessType, errors) {
   return { isPaid: true, memberPrice, nonMemberPrice, currency: EVENT_CURRENCY };
 }
 
-// `registrationFields` = admin-defined extra fields: [{ label, type, required, placeholder }].
+// `registrationFields` = admin-defined extra fields: [{ label, type, required, placeholder, options }]; `checkbox` needs options.
 export function validateRegistrationFields(rawFields, errors) {
   if (rawFields === undefined || rawFields === null || rawFields === '') return [];
 
@@ -150,12 +153,27 @@ export function validateRegistrationFields(rawFields, errors) {
       return;
     }
 
+    let options = [];
+    if (field.type === 'checkbox') {
+      const rawOptions = Array.isArray(field.options) ? field.options : [];
+      options = [...new Set(rawOptions.map((option) => (typeof option === 'string' ? option.trim() : '')).filter(Boolean))];
+      if (options.length < REGISTRATION_OPTIONS_MIN || options.length > REGISTRATION_OPTIONS_MAX) {
+        errors.push(`${position}: provide ${REGISTRATION_OPTIONS_MIN}–${REGISTRATION_OPTIONS_MAX} options.`);
+        return;
+      }
+      if (options.some((option) => option.length > REGISTRATION_OPTION_MAX)) {
+        errors.push(`${position}: each option must be ${REGISTRATION_OPTION_MAX} characters or fewer.`);
+        return;
+      }
+    }
+
     result.push({
       key: uniqueKey(label, usedKeys),
       label,
       type: field.type,
       required,
       placeholder: placeholder || null,
+      options,
     });
   });
 

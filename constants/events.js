@@ -17,6 +17,10 @@ export const REGISTRATION_FIELD_TYPES = ['text', 'textarea', 'number', 'email', 
 export const REGISTRATION_FIELDS_MAX = 15;
 export const REGISTRATION_FIELD_LABEL_MAX = 60;
 export const REGISTRATION_FIELD_PLACEHOLDER_MAX = 100;
+// A `checkbox` field is a question with options; the registrant ticks one or more.
+export const REGISTRATION_OPTIONS_MIN = 1;
+export const REGISTRATION_OPTIONS_MAX = 20;
+export const REGISTRATION_OPTION_MAX = 100;
 export const REGISTRATION_TEXT_MAX = 200;
 export const REGISTRATION_TEXTAREA_MAX = 2000;
 

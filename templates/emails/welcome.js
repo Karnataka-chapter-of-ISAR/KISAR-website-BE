@@ -6,13 +6,14 @@ const STEPS = [
   { title: 'Enter the code', detail: 'You are signed in to the member portal.' },
 ];
 
-export function renderWelcome({ name }) {
+export function renderWelcome({ name, memberId }) {
   const displayName = name || 'Member';
   const subject = 'Welcome to the Karnataka Chapter of ISAR';
 
   const bodyHtml = `
     <p style="margin:0 0 16px;">Hello ${escapeHtml(displayName)},</p>
     <p style="margin:0;">You have been registered as a KISAR member. You can now log in using this email address; a one-time code will be sent to you each time.</p>
+    ${memberId ? `<p style="margin:16px 0 0;">Your KISAR ID: <strong>${escapeHtml(memberId)}</strong></p>` : ''}
     ${renderButton('Log in to the portal →', portalUrl())}
     ${renderSteps('How login works', STEPS)}
     <p style="margin:26px 0 22px;color:#756c74;">— KISAR</p>`;
@@ -29,6 +30,7 @@ export function renderWelcome({ name }) {
     `Hello ${displayName},`,
     '',
     'You have been onboarded as a KISAR member. You can now log in using this email address; a one-time code will be sent to you each time.',
+    ...(memberId ? ['', `Your KISAR ID: ${memberId}`] : []),
     '',
     `Log in to the portal: ${portalUrl()}`,
     '',

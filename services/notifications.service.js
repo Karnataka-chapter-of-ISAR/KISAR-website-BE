@@ -9,7 +9,7 @@ import { renderRefundInitiated, renderEventCancelled } from '../templates/emails
 // Never throws: a failed welcome email must not fail member creation or an import.
 export async function sendWelcomeEmail(member) {
   try {
-    const { subject, html, text } = renderWelcome({ name: member.name });
+    const { subject, html, text } = renderWelcome({ name: member.name, memberId: member.memberId });
     await sendEmail({ to: member.email, subject, html, text });
     logger.info(`[sendWelcomeEmail] sent welcome email to ${member.email}`);
   } catch (err) {
