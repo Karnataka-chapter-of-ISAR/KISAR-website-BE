@@ -3,7 +3,7 @@ import { EMAIL_REGEX, PHONE_REGEX } from '../../constants/members.js';
 const OPTIONAL_STRING_FIELDS = [
   'title', 'membershipCategory', 'alternateEmail', 'alternatePhone',
   'address', 'city', 'district', 'state',
-  'pincode', 'country', 'zone', 'chapter', 'linkedin',
+  'pincode', 'country', 'zone', 'chapter', 'socialMedia',
 ];
 
 // Validates and normalises a raw request body into the shape the Member service expects.

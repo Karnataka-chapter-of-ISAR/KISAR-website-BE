@@ -13,6 +13,13 @@ export const MESSAGES = {
     FILE_REQUIRED: 'Please upload a file.',
   },
 
+  CONTACT: {
+    SENT: 'Thank you for reaching out. The relevant team will respond within 2 working days.',
+    VALIDATION_ERROR: 'Please check the highlighted fields and try again.',
+    RATE_LIMITED: 'You have sent too many messages. Please wait 15 minutes before trying again.',
+    SEND_FAILED: 'We could not send your message right now. Please try again in a few minutes or email info@kisar.org.in.',
+  },
+
   OTP: {
     SENT: 'A 6-digit verification code has been sent to your email. Please check your inbox.',
     INVALID_EMAIL: 'Please enter a valid email address.',

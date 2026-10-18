@@ -314,7 +314,7 @@ const MEMBER_EXPORT_COLUMNS = [
   { header: 'Country',             key: 'country' },
   { header: 'Zone',                key: 'zone' },
   { header: 'Chapter',             key: 'chapter' },
-  { header: 'LinkedIn',            key: 'linkedin' },
+  { header: 'Social Media',         key: 'socialMedia' },
   { header: 'Joined',              key: 'joined' },
   { header: 'Added Via',           key: 'source' },
 ];

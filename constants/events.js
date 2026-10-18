@@ -1,4 +1,5 @@
 export const EVENT_TYPES = ['Conference', 'Workshop', 'Seminar', 'Webinar', 'Meetup', 'CME', 'Other'];
+export const EVENT_CUSTOM_TYPE_MAX = 50;
 
 // 24-hour HH:mm, matches the native <input type="time"> format shown in the form
 export const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -6,7 +7,7 @@ export const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 // Every string-valued Event field, searched together for the events search box.
 // Excludes bannerImage (internal file path) — date is handled separately since
 // it isn't a string.
-export const EVENT_SEARCHABLE_STRING_FIELDS = ['title', 'type', 'location', 'time', 'link', 'linkLabel', 'createdBy'];
+export const EVENT_SEARCHABLE_STRING_FIELDS = ['title', 'type', 'location', 'time', 'customType', 'link', 'linkLabel', 'createdBy'];
 
 export const EVENT_ACCESS_TYPES = ['open', 'members_only'];
 

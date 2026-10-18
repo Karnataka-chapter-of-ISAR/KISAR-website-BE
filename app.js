@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import authRoutes from './routes/auth.routes.js';
 import membersRoutes from './routes/members.routes.js';
+import contactRoutes from './routes/contact.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import adminAuthRoutes from './routes/admin/auth.routes.js';
 import adminAdminsRoutes from './routes/admin/admins.routes.js';
@@ -127,6 +128,7 @@ app.get(`${API_V1}/health/db`, (req, res) => {
 app.use(`${API_V1}/auth`, authRoutes);
 
 app.use(`${API_V1}/members`, membersRoutes);
+app.use(`${API_V1}/contact`, contactRoutes);
 app.use(`${API_V1}/events`, eventsRoutes);
 app.use(`${API_V1}/registrations`, registrationsRoutes);
 app.use(`${API_V1}/payments`, paymentsRoutes);

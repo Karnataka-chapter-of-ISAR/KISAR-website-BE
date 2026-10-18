@@ -24,6 +24,8 @@ const eventSchema = new mongoose.Schema(
   {
     title:       { type: String, required: true, trim: true },
     type:        { type: String, required: true, enum: EVENT_TYPES },
+    // The admin's own category name; only set when `type` is 'Other'.
+    customType:  { type: String, trim: true, default: null },
     // `date` is the first day; `endDate` the last (same as `date` for single-day events).
     date:        { type: Date, required: true },
     endDate:     { type: Date, default: null },

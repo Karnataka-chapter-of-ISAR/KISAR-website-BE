@@ -1,4 +1,4 @@
-import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
+import { EVENT_TYPES, EVENT_CUSTOM_TYPE_MAX, TIME_FORMAT_REGEX } from '../../constants/events.js';
 import { validateAccessType, validatePricing, validateRegistrationFields } from './eventRegistrationConfig.dto.js';
 
 const LINK_LABEL_MAX_LENGTH = 50;
@@ -34,7 +34,7 @@ function parseImages(images) {
 // Returns { valid: false, errors: string[] } on failure, or { valid: true, data: {...} } on success.
 export function validateCreateEventRequest(body = {}) {
   const errors = [];
-  const { title, type, date, endDate, time, location, link, linkLabel, registrationLink, isHighlighted, images, accessType, pricing, registrationFields } = body;
+  const { title, type, customType, date, endDate, time, location, link, linkLabel, registrationLink, isHighlighted, images, accessType, pricing, registrationFields } = body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     errors.push('Event title is required.');
@@ -42,6 +42,12 @@ export function validateCreateEventRequest(body = {}) {
 
   if (!type || !EVENT_TYPES.includes(type)) {
     errors.push(`Type is required and must be one of: ${EVENT_TYPES.join(', ')}.`);
+  }
+
+  // "Other" needs the admin's own category name.
+  const trimmedCustomType = typeof customType === 'string' ? customType.trim() : '';
+  if (type === 'Other' && (!trimmedCustomType || trimmedCustomType.length > EVENT_CUSTOM_TYPE_MAX)) {
+    errors.push(`Custom category is required when type is Other and must be ${EVENT_CUSTOM_TYPE_MAX} characters or fewer.`);
   }
 
   const parsedDate = date ? new Date(date) : null;
@@ -102,6 +108,7 @@ export function validateCreateEventRequest(body = {}) {
     data: {
       title: title.trim(),
       type,
+      customType: type === 'Other' ? trimmedCustomType : null,
       date: parsedDate,
       endDate: parsedEndDate,
       time: time || null,

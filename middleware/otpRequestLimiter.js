@@ -28,3 +28,10 @@ export const registrationOtpLimiter = rateLimit({
   max: 5,
   message: { success: false, message: MESSAGES.OTP.RATE_LIMITED, data: null },
 });
+
+// Public contact form: keeps it from being used to flood the KISAR inbox.
+export const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: MESSAGES.CONTACT.RATE_LIMITED, data: null },
+});

@@ -9,7 +9,7 @@ export const MEMBER_EDIT_SECTION_FIELDS = {
   details: [
     'name', 'title', 'phone', 'alternatePhone', 'alternateEmail',
     'address', 'city', 'district', 'state',
-    'pincode', 'country', 'linkedin', 'experience',
+    'pincode', 'country', 'socialMedia', 'experience',
   ],
   membership: ['membershipCategory', 'zone', 'chapter', 'joined'],
 };
@@ -35,7 +35,7 @@ export function getMemberFieldSection(field) {
 export const ADMIN_EDITABLE_MEMBER_FIELDS = [
   'ISARMemberID', 'name', 'title', 'membershipCategory', 'email', 'alternateEmail',
   'phone', 'alternatePhone', 'address',
-  'city', 'district', 'state', 'pincode', 'country', 'zone', 'chapter', 'linkedin',
+  'city', 'district', 'state', 'pincode', 'country', 'zone', 'chapter', 'socialMedia',
   'joined', 'colorIndex',
 ];
 
@@ -46,7 +46,7 @@ export const MEMBER_SEARCHABLE_STRING_FIELDS = [
   'memberId', 'ISARMemberID', 'name', 'title', 'membershipCategory', 'email',
   'alternateEmail', 'phone', 'alternatePhone',
   'address', 'city', 'district', 'state', 'pincode', 'country',
-  'zone', 'chapter', 'linkedin',
+  'zone', 'chapter', 'socialMedia',
 ];
 
 // Name of the Atlas Search index the admin directory search runs against

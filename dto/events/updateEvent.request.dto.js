@@ -1,4 +1,4 @@
-import { EVENT_TYPES, TIME_FORMAT_REGEX } from '../../constants/events.js';
+import { EVENT_TYPES, EVENT_CUSTOM_TYPE_MAX, TIME_FORMAT_REGEX } from '../../constants/events.js';
 
 const LINK_LABEL_MAX_LENGTH = 50;
 const LOCKED_FIELDS = ['accessType', 'pricing', 'registrationFields'];
@@ -34,7 +34,7 @@ function parseImages(images) {
 export function validateUpdateEventRequest(body = {}) {
   const errors = [];
   const data = {};
-  const { title, type, date, endDate, time, location, link, linkLabel, registrationLink, isHighlighted, images } = body;
+  const { title, type, customType, date, endDate, time, location, link, linkLabel, registrationLink, isHighlighted, images } = body;
 
   // Fixed once the event is created: attendees register (and pay) against these.
   const lockedFields = LOCKED_FIELDS.filter((field) => body[field] !== undefined);
@@ -53,8 +53,17 @@ export function validateUpdateEventRequest(body = {}) {
   if (type !== undefined) {
     if (!EVENT_TYPES.includes(type)) {
       errors.push(`Type must be one of: ${EVENT_TYPES.join(', ')}.`);
+    } else if (type === 'Other') {
+      const trimmedCustomType = typeof customType === 'string' ? customType.trim() : '';
+      if (!trimmedCustomType || trimmedCustomType.length > EVENT_CUSTOM_TYPE_MAX) {
+        errors.push(`Custom category is required when type is Other and must be ${EVENT_CUSTOM_TYPE_MAX} characters or fewer.`);
+      } else {
+        data.type = type;
+        data.customType = trimmedCustomType;
+      }
     } else {
       data.type = type;
+      data.customType = null;
     }
   }
 

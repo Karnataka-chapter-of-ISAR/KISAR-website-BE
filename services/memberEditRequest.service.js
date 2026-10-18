@@ -11,7 +11,7 @@ function isSameValue(a, b) {
   return a === b;
 }
 
-// A submission can mix direct-edit fields (e.g. district, linkedin) with
+// A submission can mix direct-edit fields (e.g. district, socialMedia) with
 // approval-required ones (e.g. phone, address) in the same request — see
 // utils/profileUtil.js for which is which. Direct fields are written to the
 // Member doc immediately. Approval fields are grouped by tab (details vs

@@ -10,7 +10,9 @@ const HEADER_MAP = {
   city:              'city',
   district:          'district',
   phone:             'phone',
-  linkedin:          'linkedin',
+  socialmedia:       'socialMedia',
+  'social media':    'socialMedia',
+  linkedin:          'socialMedia', // legacy template header
   joined:            'joined',
   colorindex:        'colorIndex',
 

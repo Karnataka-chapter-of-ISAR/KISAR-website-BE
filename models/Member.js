@@ -20,7 +20,7 @@ const memberSchema = new mongoose.Schema(
     country:           { type: String, trim: true, default: null },
     zone:              { type: String, trim: true, default: null },
     chapter:           { type: String, trim: true, default: null },
-    linkedin:          { type: String, trim: true, default: null },
+    socialMedia:       { type: String, trim: true, default: null },
     joined:            { type: Number, default: null },
     colorIndex:        { type: Number, default: 0 },
     experience:        { type: String, trim: true, default: null },

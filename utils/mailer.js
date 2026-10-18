@@ -54,8 +54,9 @@ function buildRawMessage({ to, subject, text, html, attachments, replyTo }) {
 
 // `text` is always sent; pass `html` as well for a styled version.
 // `attachments` = [{ filename, content: Buffer, contentType }].
-export async function sendEmail({ to, subject, text, html, attachments = [] }) {
-  const replyTo = process.env.SES_REPLY_TO;
+// `replyTo` overrides the SES_REPLY_TO default (e.g. to answer a contact-form sender directly).
+export async function sendEmail({ to, subject, text, html, attachments = [], replyTo: replyToOverride }) {
+  const replyTo = replyToOverride || process.env.SES_REPLY_TO;
   const configSet = process.env.SES_CONFIG_SET;
 
   const content = attachments.length > 0
